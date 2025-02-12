@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-
+import BusinessDashboard from './Pages/Dashboard';
 // Page Imports
 import Login from './Auth/Login';
 import Signup from './Auth/Signup';
@@ -16,7 +16,7 @@ function App() {
           {/* <Route path="/signup" element={<SignUp />} /> */}
 
           {/* General Routes */}
-        
+          <Route path="/home" element={<BusinessDashboard />} />
         </Routes>
       </div>
     </Router>
