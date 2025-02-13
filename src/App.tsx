@@ -4,6 +4,7 @@ import BusinessDashboard from './Pages/Dashboard';
 // Page Imports
 import Login from './Auth/Login';
 import Signup from './Auth/Signup';
+import BusinessList from './Pages/Businesses';
 function App() {
   return (
     <Router>
@@ -17,6 +18,7 @@ function App() {
 
           {/* General Routes */}
           <Route path="/home" element={<BusinessDashboard />} />
+          <Route path="/business" element={<BusinessList />} />
         </Routes>
       </div>
     </Router>

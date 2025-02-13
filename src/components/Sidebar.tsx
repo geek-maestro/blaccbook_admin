@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-import { Building2, LayoutDashboard, Calendar, Users, FileText, MessageSquare, Settings, LogOut, Menu } from "lucide-react";
+import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,10 @@ import { Separator } from "@/components/ui/separator";
 
 function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
+//   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isActivePath = (path :any) => {
+  const isActivePath = (path :string) => {
     return location.pathname === path;
   };
 
@@ -26,16 +26,16 @@ function Sidebar() {
       description: 'Overview & Analytics'
     },
     { 
-      path: '/appointments', 
-      icon: Calendar, 
+      path: '/business', 
+      icon: Building2, 
       label: 'Businesses',
       description: 'Bussinesses Onboard'
     },
     { 
       path: '/patient', 
-      icon: Users, 
-      label: 'Vendors',
-      description: 'people'
+      icon: DollarSign, 
+      label: 'Investment',
+      description: 'investors & money'
     },
     { 
       path: '/report', 

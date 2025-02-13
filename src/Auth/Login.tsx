@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// import images from "../images/loginpic.jpg";
+import images from "../assets/comp1.jpg"
 
 import { Mail, Lock } from "lucide-react";
 
@@ -28,7 +28,7 @@ function Login() {
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              // backgroundImage: `url(${images})`,
+               backgroundImage: `url(${images})`,
             }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/90 to-blue-800/90 flex flex-col items-center justify-center p-8">

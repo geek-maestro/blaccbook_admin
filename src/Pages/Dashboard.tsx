@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState } from 'react';
 
 import Sidebar from '@/components/Sidebar';
 import { Search, Star, TrendingUp, Users, DollarSign, Clock } from "lucide-react";
@@ -24,8 +24,8 @@ import {
 } from "@/components/ui/select";
 
 function BusinessDashboard() {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+//   const [reviews, setReviews] = useState([]);
+//   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState("week");
 
  
