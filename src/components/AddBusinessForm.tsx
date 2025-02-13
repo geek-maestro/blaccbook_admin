@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,16 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -27,17 +19,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 const AddBusinessForm = () => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    description: '',
+    phone: '',
+    website: '',
+    country: '',
+    city: '',
+    address: '',
+    isBookable: false,
+    hasMenu: false
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSwitchChange = (name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: !prev[name as keyof typeof prev]
+    }));
+  };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted');
+    console.log('Form data:', formData);
     setOpen(false);
   };
 
@@ -62,30 +78,41 @@ const AddBusinessForm = () => {
             <h3 className="text-lg font-medium">Basic Information</h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Business Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter business name" />
-                </FormControl>
-              </FormItem>
+              <div className="space-y-2">
+                <Label htmlFor="name">Business Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter business name"
+                />
+              </div>
 
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="business@example.com" />
-                </FormControl>
-              </FormItem>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="business@example.com"
+                />
+              </div>
             </div>
 
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Enter business description"
-                  className="h-20"
-                />
-              </FormControl>
-            </FormItem>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Enter business description"
+                className="h-20"
+              />
+            </div>
           </div>
 
           {/* Contact Information */}
@@ -93,25 +120,36 @@ const AddBusinessForm = () => {
             <h3 className="text-lg font-medium">Contact Information</h3>
             
             <div className="grid grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="+1 (555) 000-0000" />
-                </FormControl>
-              </FormItem>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
 
-              <FormItem>
-                <FormLabel>Website</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://example.com" />
-                </FormControl>
-              </FormItem>
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Country</FormLabel>
-                <Select>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Select 
+                  value={formData.country} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select country" />
                   </SelectTrigger>
@@ -121,22 +159,30 @@ const AddBusinessForm = () => {
                     <SelectItem value="ca">Canada</SelectItem>
                   </SelectContent>
                 </Select>
-              </FormItem>
+              </div>
 
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter city" />
-                </FormControl>
-              </FormItem>
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  placeholder="Enter city"
+                />
+              </div>
             </div>
 
-            <FormItem>
-              <FormLabel>Street Address</FormLabel>
-              <FormControl>
-                <Input placeholder="123 Business Street" />
-              </FormControl>
-            </FormItem>
+            <div className="space-y-2">
+              <Label htmlFor="address">Street Address</Label>
+              <Input
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="123 Business Street"
+              />
+            </div>
           </div>
 
           {/* Business Features */}
@@ -145,37 +191,23 @@ const AddBusinessForm = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
-                <Switch id="isBookable" />
+                <Switch
+                  id="isBookable"
+                  checked={formData.isBookable}
+                  onCheckedChange={() => handleSwitchChange('isBookable')}
+                />
                 <Label htmlFor="isBookable">Enable Bookings</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch id="hasMenu" />
+                <Switch
+                  id="hasMenu"
+                  checked={formData.hasMenu}
+                  onCheckedChange={() => handleSwitchChange('hasMenu')}
+                />
                 <Label htmlFor="hasMenu">Has Menu</Label>
               </div>
             </div>
-
-            <FormItem>
-              <FormLabel>Features</FormLabel>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="outdoor" />
-                  <Label htmlFor="outdoor">Outdoor Seating</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="wifi" />
-                  <Label htmlFor="wifi">Free WiFi</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="parking" />
-                  <Label htmlFor="parking">Parking Available</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="delivery" />
-                  <Label htmlFor="delivery">Delivery Service</Label>
-                </div>
-              </div>
-            </FormItem>
           </div>
 
           {/* Submit Button */}
