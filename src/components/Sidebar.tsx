@@ -13,44 +13,44 @@ function Sidebar() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isActivePath = (path) => {
+  const isActivePath = (path :any) => {
     return location.pathname === path;
   };
 
  
   const navItems = [
     { 
-      path: '/user/dashboard', 
+      path: '/home', 
       icon: LayoutDashboard, 
       label: 'Dashboard',
       description: 'Overview & Analytics'
     },
     { 
-      path: '/user/appointments', 
+      path: '/appointments', 
       icon: Calendar, 
       label: 'Businesses',
       description: 'Bussinesses Onboard'
     },
     { 
-      path: '/user/patient', 
+      path: '/patient', 
       icon: Users, 
       label: 'Vendors',
       description: 'people'
     },
     { 
-      path: '/user/report', 
+      path: '/report', 
       icon: FileText, 
       label: 'Reports',
       description: 'Analytics'
     },
     { 
-      path: '/user/message', 
+      path: '/message', 
       icon: MessageSquare, 
       label: 'Reviews',
       description: 'Communications'
     },
     { 
-      path: '/user/settings', 
+      path: '/settings', 
       icon: Settings, 
       label: 'Settings',
       description: 'Preferences'

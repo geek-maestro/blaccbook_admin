@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // import images from "../images/loginpic.jpg";
-import { RiHospitalLine } from 'react-icons/ri';
+
 import { Mail, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
