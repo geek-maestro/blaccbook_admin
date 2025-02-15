@@ -29,7 +29,7 @@ function Sidebar() {
       path: '/business', 
       icon: Building2, 
       label: 'Businesses',
-      description: 'Bussinesses Onboard'
+      description: 'Businesses Onboard'
     },
     { 
       path: '/patient', 
@@ -65,7 +65,7 @@ function Sidebar() {
           <Building2 className="h-6 w-6 text-blue-300" />
           <div>
             <h2 className="text-xl font-bold tracking-wider text-white">BLACCBOOK</h2>
-            <p className="text-xs text-blue-200">Black Bussinesses</p>
+            <p className="text-xs text-blue-200">Black Businesses</p>
           </div>
         </div>
       </div>

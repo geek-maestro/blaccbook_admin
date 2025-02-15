@@ -5,6 +5,7 @@ import BusinessDashboard from './Pages/Dashboard';
 import Login from './Auth/Login';
 import Signup from './Auth/Signup';
 import BusinessList from './Pages/Businesses';
+import BusinessDetailsPage from './components/BusinessDetails';
 function App() {
   return (
     <Router>
@@ -19,6 +20,7 @@ function App() {
           {/* General Routes */}
           <Route path="/home" element={<BusinessDashboard />} />
           <Route path="/business" element={<BusinessList />} />
+             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
         </Routes>
       </div>
     </Router>

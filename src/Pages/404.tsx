@@ -116,6 +116,9 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
 };
 
 const BusinessList = () => {
+  // Filter out banned businesses
+  const activeBusinesses = mockBusinesses.filter(business => !business.isBanned);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -125,11 +128,17 @@ const BusinessList = () => {
             <h1 className="text-3xl font-bold">Our Businesses</h1>
             <AddBusinessForm />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockBusinesses.map((business) => (
-              <BusinessCard key={business.id} business={business} />
-            ))}
-          </div>
+          {activeBusinesses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {activeBusinesses.map((business) => (
+                <BusinessCard key={business.id} business={business} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-xl text-gray-500">No active businesses found.</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
