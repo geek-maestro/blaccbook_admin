@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BusinessDashboard from './Pages/Dashboard';
 import BusinessDashboard2 from './Pages/Dashboard2';
