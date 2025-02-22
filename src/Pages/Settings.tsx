@@ -34,7 +34,7 @@ const SettingsPage = () => {
   const [profileImage, setProfileImage] = useState("/api/placeholder/150/150");
   const [loading, setLoading] = useState(false);
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = (event: any) => {
     const file = event.target.files[0];
     if (file) {
       setLoading(true);

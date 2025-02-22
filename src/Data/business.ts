@@ -37,6 +37,7 @@ export interface IMapLocation {
     hasMenu?: boolean;
     bookableDetails?: IBookableDetails;
     rating?: number;
+    isBanned?: boolean;
   }
 export const mockBusinesses: IBusiness[] = [
     {
