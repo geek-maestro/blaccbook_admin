@@ -8,6 +8,7 @@ import Signup from './Auth/Signup';
 import BusinessList from './Pages/Businesses';
 import BusinessDetailsPage from './components/BusinessDetails';
 import SettingsPage from './Pages/Settings';
+import Investments from './Pages/Investments';
 function App() {
   return (
     <Router>
@@ -24,6 +25,7 @@ function App() {
           <Route path="/home2" element={<BusinessDashboard2 />} />
           <Route path="/business" element={<BusinessList />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/investments" element={<Investments />} />
              <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
         </Routes>
       </div>
