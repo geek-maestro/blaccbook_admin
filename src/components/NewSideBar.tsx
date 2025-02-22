@@ -28,7 +28,7 @@ function Sidebar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isActivePath = (path) => {
+  const isActivePath = (path: any) => {
     return location.pathname === path;
   };
 
@@ -78,7 +78,7 @@ function Sidebar() {
     }
   ];
 
-  const NavItem = ({ item }) => {
+  const NavItem = ({ item }: any) => {
     const Icon = item.icon;
     return (
       <Link
@@ -94,7 +94,7 @@ function Sidebar() {
     );
   };
 
-  const CollapsibleNavItem = ({ item }) => {
+  const CollapsibleNavItem = ({ item }: any) => {
     const [isItemOpen, setIsItemOpen] = useState(false);
     const Icon = item.icon;
 
@@ -113,7 +113,7 @@ function Sidebar() {
           )} />
         </CollapsibleTrigger>
         <CollapsibleContent className="pl-9 pr-2">
-          {item.items.map((subItem) => (
+          {item.items.map((subItem: any) => (
             <Link
               key={subItem.path}
               to={subItem.path}

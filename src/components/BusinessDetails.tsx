@@ -210,7 +210,7 @@ const useBusiness = (initialBusinesses: any[]) => {
                     <div>
                       <h2 className="text-xl font-semibold mb-3">Features</h2>
                       <div className="flex flex-wrap gap-2">
-                        {business.features.map((feature) => (
+                        {business.features.map((feature: any) => (
                           <Badge key={feature} variant="outline">
                             {feature}
                           </Badge>
@@ -223,7 +223,7 @@ const useBusiness = (initialBusinesses: any[]) => {
                     <div>
                       <h2 className="text-xl font-semibold mb-3">Categories</h2>
                       <div className="flex flex-wrap gap-2">
-                        {business.categories.map((category) => (
+                        {business.categories.map((category:any) => (
                           <Badge key={category} variant="secondary">
                             {category}
                           </Badge>
@@ -240,7 +240,7 @@ const useBusiness = (initialBusinesses: any[]) => {
                       <ImageIcon className="h-5 w-5 mr-2" /> Gallery
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
-                      {business.images.slice(0, 4).map((image, index) => (
+                      {business.images.slice(0, 4).map((image: any, index: number) => (
                         <img 
                           key={index} 
                           src={image} 
