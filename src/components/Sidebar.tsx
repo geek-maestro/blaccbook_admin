@@ -32,7 +32,7 @@ function Sidebar() {
       description: 'Businesses Onboard'
     },
     { 
-      path: '/patient', 
+      path: '/investments', 
       icon: DollarSign, 
       label: 'Investment',
       description: 'investors & money'
