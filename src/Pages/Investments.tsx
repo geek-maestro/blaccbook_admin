@@ -98,12 +98,49 @@ const Investments = () => {
   ];
 
   const data = [
-    { title: "Phone", amountLeft: "$18.00", progress: 50 },
-    { title: "Internet", amountLeft: "$40.00", progress: 80 },
-    { title: "Electricity", amountLeft: "$25.00", progress: 60 },
-    { title: "Water", amountLeft: "$15.00", progress: 30 },
-    { title: "Gas", amountLeft: "$22.00", progress: 70 },
-  ];
+    {
+      title: "Phone",
+      amount: "$50.00",
+      amountLeft: "$18.00",
+      progress: 70,
+      date: "Apr 20",
+    },
+    {
+      title: "Internet",
+      amount: "$60.00",
+      amountLeft: "$40.00",
+      progress: 20,
+      date: "Feb 1",
+    },
+    {
+      title: "Electricity",
+      amount: "$40.00",
+      amountLeft: "$25.00",
+      progress: 60,
+      date: "Mar 12",
+    },
+    {
+      title: "Water",
+      amount: "$30.00",
+      amountLeft: "$15.00",
+      progress: 30,
+      date: "Apr 7",
+    },
+    {
+      title: "Gas",
+      amount: "$37.00",
+      amountLeft: "$22.00",
+      progress: 70,
+      date: "Feb 13",
+    },
+    {
+      title: "Rent",
+      amount: "$500.00",
+      amountLeft: "$500.00",
+      progress: 0,
+      date: "Apr 18",
+    },
+  ];;
 
   const transactions = [
     {
@@ -171,11 +208,20 @@ const Investments = () => {
     return chartData.reduce((acc, curr) => acc + curr.value, 0);
   }, [chartData]);
 
+  const getRandomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  };
+
   return (
-    <div className="flex bg-gray-50">
+    <div className="flex flex-col lg:flex-row bg-gray-50">
       <Sidebar />
-      <div className="flex gap-4 p-8 w-full">
-        <div className="w-[20%] border-2 border-x-gray-300 h-[95%] bg-white rounded-3xl p-4">
+      <div className="flex flex-col lg:flex-row gap-4 p-4 lg:p-8 w-full">
+        <div className="w-full lg:w-[20%] border-2 border-x-gray-300 h-auto lg:h-[95%] bg-white rounded-3xl p-4">
           <div className="flex items-center justify-between w-full mb-4">
             <h1 className="text-2xl font-normal">Accounts</h1>
             <img src="add-circle.svg" alt="Add" className="h-6 w-6 ml-2" />
@@ -240,11 +286,13 @@ const Investments = () => {
           })}
         </div>
 
-        <div className="w-[80%] bg-transparent flex flex-col flex-1 gap-4 rounded-2xl">
-          <div className="flex  border-2 border-x-gray-300 bg-white rounded-2xl">
-            <Card className="flex rounded-2xl border-none shadow-none flex-col w-[50%]">
+        <div className="w-full lg:w-[80%] bg-transparent flex flex-col flex-1 gap-4 rounded-2xl">
+          <div className="flex flex-col lg:flex-row border-2 border-x-gray-300 bg-white rounded-2xl">
+            <Card className="flex rounded-2xl border-none shadow-none flex-col w-full lg:w-[50%]">
               <CardHeader className="items-start pb-0">
-                <CardTitle className="text-start text-xl font-normal">Spending Plan</CardTitle>
+                <CardTitle className="text-start text-xl font-normal">
+                  Spending Plan
+                </CardTitle>
                 <CardDescription className="text-start">
                   January - June 2024
                 </CardDescription>
@@ -284,7 +332,7 @@ const Investments = () => {
               </CardContent>
             </Card>
 
-            <div className="p-6 w-[50%] bg-white rounded-2xl relative">
+            <div className="p-6 w-full lg:w-[50%] bg-white rounded-2xl relative">
               <div className="flex w-full items-center justify-between mb-4 relative">
                 <h1 className="text-xl font-normal">Planned Spending</h1>
               </div>
@@ -304,13 +352,15 @@ const Investments = () => {
                               <p>{item.title}</p>
                               <RefreshCcw className="h-4" />
                             </div>
-                            <p className="pl-4 text-[14px]">{item.amountLeft} left</p>
+                            <p className="pl-4 text-[14px]">
+                              {item.amountLeft} left
+                            </p>
                             <Progress
                               value={item.progress}
                               className=" w-[95%] self-end [&>*]:bg-blue-500 h-8 rounded-xl "
                             ></Progress>
                             <p className="text-end text-gray-600 text-[12px]">
-                              out of {item.amountLeft}
+                              out of {item.amount}
                             </p>
                           </CardContent>
                         </Card>
@@ -322,8 +372,8 @@ const Investments = () => {
             </div>
           </div>
 
-          <div className="grid auto-rows-min gap-4 md:grid-cols-2">
-            <div className="aspect-video overflow-hidden rounded-2xl border-2 border-x-gray-300 bg-white">
+          <div className="grid auto-rows-min gap-4 lg:grid-cols-2">
+            <div className="h-[300px] overflow-hidden rounded-2xl border-2 border-x-gray-300 bg-white">
               <div className="flex flex-col rounded-t-2xl w-full py-2 px-4 bg-slate-100">
                 <h1 className="text-lg font-normal">$679.89 Spent</h1>
                 <p className="text-gray-500 font-semibold text-[12px]">
@@ -355,7 +405,7 @@ const Investments = () => {
               </div>
             </div>
 
-            <div className="aspect-video overflow-hidden rounded-2xl border-2 border-x-gray-300 bg-white">
+            <div className="h-[300px] overflow-hidden rounded-2xl border-2 border-x-gray-300 bg-white">
               <div className="p-4 w-full bg-white rounded-2xl relative">
                 <div className="flex w-full items-center justify-between mb-2 relative">
                   <h1 className="text-lg font-normal">Bills & Payments</h1>
@@ -366,26 +416,55 @@ const Investments = () => {
                     <CarouselPrevious />
                     <CarouselNext />
                   </div>
-                  <CarouselContent className="grid grid-cols-2 grid-rows-2 gap-2 h-full">
-                    {data.map((item, index) => (
-                      <CarouselItem key={index} className="w-full flex">
-                        <div className="p-1 w-full h-full">
-                          <Card className="h-full">
-                            <CardContent className="flex flex-col p-2 h-full w">
-                              <div className="flex items-center gap-2">
-                                <p>{item.title}</p>
-                                <RefreshCcw className="h-4" />
+                  {Array.from({ length: Math.ceil(data.length / 4) }).map(
+                    (_, pageIndex) => (
+                      <CarouselContent
+                        key={pageIndex}
+                        className="grid grid-cols-2 grid-rows-2 gap-2 h-full"
+                      >
+                        {data
+                          .slice(pageIndex * 4, pageIndex * 4 + 4)
+                          .map((item, index) => (
+                            <CarouselItem key={index} className="w-full flex">
+                              <div className="p-1 w-full h-full">
+                                <Card className="h-full">
+                                  <CardContent className="flex flex-col p-2 h-full w">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex p-0 gap-4 items-center">
+                                        <div
+                                          style={{
+                                            backgroundColor: getRandomColor(),
+                                          }}
+                                          className="flex p-0 h-6 w-6 rounded-lg justify-center items-center text-white text-[14px]"
+                                        >
+                                          {item.title.charAt(0)}
+                                        </div>
+                                        <p className="text-[14px] text-gray-600">
+                                          {item.date}
+                                        </p>
+                                      </div>
+                                      <EllipsisVertical className="h-4" />
+                                    </div>
+                                    <p className="text-xl font-normal">
+                                      {item.title}
+                                    </p>
+                                    <p
+                                      className={`text-[14px] font-normal ${
+                                        parseAmount(item.amountLeft) >= 0
+                                          ? "text-green-700"
+                                          : "text-red-700"
+                                      }`}
+                                    >
+                                      {item.amountLeft} left
+                                    </p>
+                                  </CardContent>
+                                </Card>
                               </div>
-                              <p className="pl-4">{item.amountLeft} left</p>
-                              <p className="text-end text-gray-600 text-[12px]">
-                                out of {item.amountLeft}
-                              </p>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
+                            </CarouselItem>
+                          ))}
+                      </CarouselContent>
+                    )
+                  )}
                 </Carousel>
               </div>
             </div>
