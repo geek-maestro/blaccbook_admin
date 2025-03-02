@@ -16,8 +16,13 @@ import Sidebar from '@/components/Sidebar';
 import { IBusiness } from '@/Data/business';
 import { mockBusinesses } from '@/Data/business';
 import AddBusinessForm from '@/components/AddBusinessForm';
+import { useBusinesses } from '@/services/business.service';
 
 const BusinessCard = ({ business }: { business: IBusiness }) => {
+  
+
+  // const business = businesses.find((b: IBusiness) => b.id === id);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -116,6 +121,20 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
 };
 
 const BusinessList = () => {
+
+  const { data:businesses, isLoading, error: fetchError } = useBusinesses();
+  console.log(businesses, "data", fetchError, "Error fetching");
+  // const businesses = data?.data || [];
+
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (fetchError) {
+    return <div>Error loading businesses</div>;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -126,7 +145,7 @@ const BusinessList = () => {
             <AddBusinessForm />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockBusinesses.map((business) => (
+            {businesses?.map((business) => (
               <BusinessCard key={business.id} business={business} />
             ))}
           </div>

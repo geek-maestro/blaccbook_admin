@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "@/lib/firebaseConfig";
 
 import images from "../assets/comp1.jpg";
 
@@ -16,17 +18,48 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useCredSignIn, useSocialLogin } from "@/services/auth1.service";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { mutate: signIn, isPending, error } = useCredSignIn();
+  const { mutate: socialLogin, isPending: socialLoginPending, error: socialLoginError } = useSocialLogin();
   const navigate = useNavigate();
-  const handleLogin = async (e: React.FormEvent) => {
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    navigate("/home");
+    signIn(
+      { email, password },
+      {
+        onSuccess: () => navigate("/home"),
+        onError: (error) => {
+          console.error("Login error:", error);
+        }
+      }
+    );
+  };
+
+  const handleSocialLogin = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken && result.user) {
+          socialLogin(
+            credential.accessToken,
+            {
+              onSuccess: () => navigate("/home"),
+              onError: (error) => {
+                console.error("Social login error:", error);
+              }
+            }
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Google sign in error:", error);
+      });
   };
 
   return (
@@ -62,9 +95,11 @@ function Login() {
               <CardDescription>Invest in blacc Businesses</CardDescription>
             </CardHeader>
 
-            {error && (
+            {(error || socialLoginError) && (
               <Alert variant="destructive" className="mb-6">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error instanceof Error ? error.message : socialLoginError instanceof Error ? socialLoginError.message : "An error occurred"}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -81,7 +116,7 @@ function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    disabled={isLoading}
+                    disabled={isPending}
                   />
                 </div>
               </div>
@@ -98,7 +133,7 @@ function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    disabled={isLoading}
+                    disabled={isPending}
                   />
                 </div>
               </div>
@@ -106,9 +141,9 @@ function Login() {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                disabled={isLoading}
+                disabled={isPending}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isPending ? "Signing in..." : "Sign In"}
               </Button>
 
               <div className="relative my-4">
@@ -126,8 +161,8 @@ function Login() {
                 type="button"
                 variant="outline"
                 className="w-full"
-                disabled={isLoading}
-                // onClick={() => !isLoading && navigate("/signup")}
+                disabled={isPending}
+                onClick={handleSocialLogin}
               >
                 <svg
                   className="mr-2 h-4 w-4"
@@ -154,7 +189,7 @@ function Login() {
                     variant="link"
                     type="button"
                     className="text-teal-600 font-semibold hover:text-blue-700 p-0"
-                    onClick={() => !isLoading && navigate("/signup")}
+                    onClick={() => !isPending && navigate("/signup")}
                   >
                     Create Account
                   </Button>
