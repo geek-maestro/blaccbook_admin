@@ -32,7 +32,7 @@ const Signup = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     signUp(form, {
-      onSuccess: () => navigate("/dashboard"), // Redirect after success
+      onSuccess: () => navigate("/home"), // Redirect after success
     });
   };
 
