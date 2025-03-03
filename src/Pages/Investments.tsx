@@ -32,7 +32,7 @@ import { Progress } from "@/components/ui/progress";
 const Investments = () => {
   const [openSections, setOpenSections] = useState<openSections>({});
 
-  interface Accounts {
+  interface AccountType {
     title: string;
     subcategories: Subcategory[];
     color?: string;
@@ -54,7 +54,7 @@ const Investments = () => {
     }));
   };
 
-  const Accounts = [
+  const accounts = [
     {
       title: "Banking",
       subcategories: [
@@ -185,7 +185,7 @@ const Investments = () => {
     return parseFloat(amount.replace(/[^0-9.-]+/g, "")) || 0;
   }
 
-  const netWorth = Accounts.reduce((total, account) => {
+  const netWorth = accounts.reduce((total, account) => {
     return (
       total +
       account.subcategories.reduce(
@@ -195,7 +195,7 @@ const Investments = () => {
     );
   }, 0);
 
-  const chartData = Accounts.map((account, index) => ({
+  const chartData = accounts.map((account, index) => ({
     name: account.title,
     value: account.subcategories.reduce(
       (sum, sub) => sum + parseAmount(sub.amount),
@@ -234,7 +234,7 @@ const Investments = () => {
             <p className="font-bold">${netWorth.toLocaleString()}</p>
           </div>
 
-          {Accounts.map((account) => {
+          {accounts.map((account) => {
             const totalAmount = account.subcategories.reduce(
               (sum, sub) => sum + parseAmount(sub.amount),
               0
@@ -298,8 +298,8 @@ const Investments = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex pb-0 items-start">
-                <ChartContainer
-                  config={Accounts}
+                {/* <ChartContainer
+                  config={accounts}
                   className="items-start w-full h-full rounded-2xl"
                 >
                   <PieChart>
@@ -321,7 +321,7 @@ const Investments = () => {
                       height={26}
                     />
                   </PieChart>
-                </ChartContainer>
+                </ChartContainer> */}
                 <text textAnchor="middle" dominantBaseline="middle">
                   <p className="fill-foreground text-xl font-bold">
                     ${totalAmount.toLocaleString()}

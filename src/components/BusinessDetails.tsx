@@ -50,7 +50,7 @@ import {
 } from "@/services/business.service";
 import { auth } from "@/lib/firebaseConfig";
 
-const useBusiness = (initialBusinesses: any[]) => {
+const useBusinessData = (initialBusinesses: any[]) => {
   const [businesses, setBusinesses] = useState(initialBusinesses);
 
   // const updateBusiness = (id: string, updatedBusiness: any) => {
@@ -104,7 +104,7 @@ const BusinessDetailsPage = () => {
   const [editedBusiness, setEditedBusiness] = useState<IBusiness | null>(null);
   // const user = auth.currentUser;
 
-  const userData = localStorage.getItem("vendorData")
+  const userData = JSON.parse(localStorage.getItem("vendorData") || "{}");
 
   useEffect(() => {
     if (userData) {
@@ -330,7 +330,7 @@ const BusinessDetailsPage = () => {
                 <DropdownMenuItem onSelect={handleEdit}>
                   <Edit className="mr-2 h-4 w-4" /> Edit Business
                 </DropdownMenuItem>
-                {userData && userData?.role === "admin" && (
+                {userData && userData.role === "admin" && (
                   <>
                     <DropdownMenuItem
                       onSelect={() => setIsDeleteModalOpen(true)}
