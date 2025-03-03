@@ -34,23 +34,23 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
   return (
     <Link to={`/businesses/${business.id}`}>
       <Card className="w-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader>
-          <div className="flex items-start justify-between">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
                 <AvatarImage src={business.featuredImage} alt={business.name} />
                 <AvatarFallback>{business.name[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-xl">{business.name}</CardTitle>
+                <CardTitle className="text-lg sm:text-xl break-words">{business.name}</CardTitle>
                 <CardDescription className="flex items-center mt-1">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {business.contact.city}, {business.contact.state}
+                  <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="break-words">{business.contact.city}, {business.contact.state}</span>
                 </CardDescription>
               </div>
             </div>
             {business.rating && (
-              <Badge variant="secondary" className="flex items-center gap-1">
+              <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 {business.rating}
               </Badge>
@@ -61,24 +61,24 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {business.features?.map((feature) => (
-                <Badge key={feature} variant="outline">
+                <Badge key={feature} variant="outline" className="break-words">
                   {feature}
                 </Badge>
               ))}
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
               <div className="flex items-center">
-                <Phone className="h-4 w-4 mr-1" />
-                {business.contact.countryCode} {business.contact.telephone}
+                <Phone className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="break-words">{business.contact.countryCode} {business.contact.telephone}</span>
               </div>
               {business.website && (
                 <div className="flex items-center">
-                  <Globe className="h-4 w-4 mr-1" />
+                  <Globe className="h-4 w-4 mr-1 flex-shrink-0" />
                   <a 
                     href={business.website} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="hover:text-blue-500"
+                    className="hover:text-blue-500 break-words"
                     onClick={(e) => e.stopPropagation()}
                   >
                     Website
@@ -86,16 +86,17 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
                 </div>
               )}
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1" />
-                {formatDate(business.createdAt)}
+                <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="break-words">{formatDate(business.createdAt)}</span>
               </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
           {business.isBookable && (
             <Button 
               variant="outline" 
+              className="w-full sm:w-auto"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -106,6 +107,7 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
           )}
           {business.hasMenu && (
             <Button
+              className="w-full sm:w-auto"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -136,12 +138,12 @@ const BusinessList = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col sm:flex-row h-screen overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8 space-y-6">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">Our Businesses</h1>
+        <div className="p-4 sm:p-8 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold">Our Businesses</h1>
             <AddBusinessForm />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
