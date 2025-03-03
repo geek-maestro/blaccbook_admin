@@ -1,19 +1,23 @@
 export type IBusiness = {
-    id: string,
-    createdAt: string,
+    id?: string,
+    createdAt?: string,
     name: string,
     email: string,
     featuredImage: string,
-    categories: string[],
-    images: string[],
+    categories?: string[],
+    images?: string[],
     website?: string,
     contact: IContact,
-    features: string[],
-    isEcommerce: boolean, // CAN YOU BUY FROM THEM ONLINE
+    description?: string,
+    features?: string[],
+    isBanned?: boolean,
+    address?: string,
+    isEcommerce?: boolean, // CAN YOU BUY FROM THEM ONLINE
     isBookable: boolean, // CAN YOU MAKE A BOOKING OR RESERVATION
     hasMenu: boolean, // IF IT HAS A FOOD MENU
     bookableDetails?: BookableDetails,
-    rating: number
+    rating?: number,
+    products?: IProduct[],
 }
 
 export type IContact = {
@@ -24,6 +28,12 @@ export type IContact = {
     city: string,
     street: string,
     mapLocation: MapLocation
+}
+
+export type IProduct = {
+    name: string,
+    price: number,
+    image: string
 }
 
 export type MapLocation = {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,42 +20,87 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useAddBizz } from "@/services/business.service";
+import { IBusiness } from "@/Types/business";
+import { features } from "process";
 
 const AddBusinessForm = () => {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    description: '',
-    phone: '',
-    website: '',
-    country: '',
-    city: '',
-    address: '',
+  const { mutate: addBusiness, isPending, error } = useAddBizz();
+  const [formData, setFormData] = useState<IBusiness>({
+    name: "",
+    email: "",
+    featuredImage: "",
+    description: "",
+    website: "",
+    contact: {
+      telephone: "",
+      countryCode: "",
+      country: "",
+      state: "",
+      city: "",
+      street: "",
+      mapLocation: {
+        lat: "",
+        lng: "",
+        staticMapUri: "",
+        mapUrl: "",
+      },
+    },
+    address: "",
     isBookable: false,
-    hasMenu: false
+    hasMenu: false,
+    categories: [],
+    images: [],
+    features: [],
+    rating: 0,
+    isEcommerce: false,
+    isBanned: false,
+    createdAt: new Date().toISOString(),
   });
+  
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      ...(name in prev.contact
+        ? { contact: { ...prev.contact, [name]: value } } // Update contact fields
+        : { [name]: value }), // Update top-level fields
     }));
   };
 
-  const handleSwitchChange = (name: string) => {
-    setFormData(prev => ({
+  const handleSwitchChange = (name: keyof typeof formData) => {
+    setFormData((prev) => ({
       ...prev,
-      [name]: !prev[name as keyof typeof prev]
+      [name]: !prev[name], // Correctly toggles boolean values
     }));
   };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Form data:', formData);
-    setOpen(false);
+  
+    const businessData = {
+      ...formData,
+      categories: formData.categories ?? [],
+      images: formData.images ?? [],
+      features: formData.features ?? [],
+    };
+  
+    addBusiness(businessData, {
+      onSuccess: () => {
+        setOpen(false);
+        console.log("Business added successfully!");
+      },
+      onError: (error) => {
+        console.error("Error adding business:", error);
+      },
+    });
   };
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -76,7 +121,7 @@ const AddBusinessForm = () => {
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Basic Information</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Business Name</Label>
@@ -118,14 +163,14 @@ const AddBusinessForm = () => {
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Contact Information</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
+                  id="telephone"
+                  name="telephone"
+                  value={formData.contact.telephone}
                   onChange={handleInputChange}
                   placeholder="+1 (555) 000-0000"
                 />
@@ -146,9 +191,14 @@ const AddBusinessForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Select 
-                  value={formData.country} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+                <Select
+                  value={formData.contact.country}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      contact: { ...prev.contact, country: value },
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select country" />
@@ -166,7 +216,7 @@ const AddBusinessForm = () => {
                 <Input
                   id="city"
                   name="city"
-                  value={formData.city}
+                  value={formData.contact.city}
                   onChange={handleInputChange}
                   placeholder="Enter city"
                 />
@@ -188,13 +238,13 @@ const AddBusinessForm = () => {
           {/* Business Features */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Business Features</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="isBookable"
                   checked={formData.isBookable}
-                  onCheckedChange={() => handleSwitchChange('isBookable')}
+                  onCheckedChange={() => handleSwitchChange("isBookable")}
                 />
                 <Label htmlFor="isBookable">Enable Bookings</Label>
               </div>
@@ -203,7 +253,7 @@ const AddBusinessForm = () => {
                 <Switch
                   id="hasMenu"
                   checked={formData.hasMenu}
-                  onCheckedChange={() => handleSwitchChange('hasMenu')}
+                  onCheckedChange={() => handleSwitchChange("hasMenu")}
                 />
                 <Label htmlFor="hasMenu">Has Menu</Label>
               </div>
@@ -212,10 +262,17 @@ const AddBusinessForm = () => {
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit">Add Business</Button>
+
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Adding..." : "Add Business"}
+            </Button>
           </div>
         </form>
       </DialogContent>

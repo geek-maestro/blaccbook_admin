@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu } from "lucide-react";
 
@@ -7,8 +7,26 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { useLogout } from '@/services/auth1.service';
 
 function Sidebar() {
+  const navigate = useNavigate();
+
+  const { mutate: signOut, isPending } = useLogout();
+
+  const handleLogout = () => {
+    signOut(undefined, {
+      onSuccess: () => {
+        // Navigate to login page or handle successful logout
+        navigate("/login");
+      },
+      onError: (error) => {
+        console.error("Logout failed:", error);
+        // Handle error (show toast, etc.)
+      }
+    });
+  };
+
   const location = useLocation();
 //   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +50,7 @@ function Sidebar() {
       description: 'Businesses Onboard'
     },
     { 
-      path: '/patient', 
+      path: '/investments', 
       icon: DollarSign, 
       label: 'Investment',
       description: 'investors & money'
@@ -117,7 +135,7 @@ function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-100"
-         
+         onClick={handleLogout}
         >
           <LogOut className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" />
           <span>Sign Out</span>
