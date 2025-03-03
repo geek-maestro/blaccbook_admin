@@ -3,24 +3,47 @@ import {
   createUserWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithCredential, 
-  signInWithEmailAndPassword 
+  signInWithEmailAndPassword,
+  signOut
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { post } from "@/lib/firestoreCrud";
+import { post, getByFilters } from "@/lib/firestoreCrud";
+
+// First, add a function to fetch vendor data
+const fetchVendorData = async (userId: string) => {
+  const result = await getByFilters("vendors", [
+    { key: "userId", operator: "==", value: userId }
+  ]);
+  if (result.data.length === 0) {
+    throw new Error("Vendor profile not found");
+  }
+  return result.data[0];
+};
+
+// Function to save vendor data to localStorage
+const saveVendorToStorage = (vendorData: any) => {
+  localStorage.setItem('vendorData', JSON.stringify(vendorData));
+};
 
 // Function to sign in with credentials
 const credSignIn = async (email: string, password: string) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
-  return userCred.user;
+  const vendorData = await fetchVendorData(userCred.user.uid);
+  saveVendorToStorage(vendorData);
+  return { user: userCred.user, vendorData };
 };
 
 // Custom Hook: Sign in with Email & Password
 export const useCredSignIn = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       credSignIn(email, password),
-    onSuccess: (user) => {
-      console.log("Signed in:", user);
+    onSuccess: (data) => {
+      console.log("Signed in:", data.user);
+      console.log("Vendor data:", data.vendorData);
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
     onError: (error) => {
       throw new Error(
@@ -47,7 +70,7 @@ const createProfile = async (
     lastname,
     username,
     avatar,
-    role,
+    role: "vendor",
     createdAt: new Date().toISOString(),
     isActive: true,
   });
@@ -101,22 +124,49 @@ export const useSignUp = () => {
   });
 };
 
+// Function to check if vendor exists
+const checkVendorExists = async (userId: string) => {
+  const result = await getByFilters("vendors", [
+    { key: "userId", operator: "==", value: userId }
+  ]);
+  return result.data.length > 0;
+};
+
 // Function to sign in with Google
-const socialLogin = async (token: string) => {
-  const credential = GoogleAuthProvider.credential(token);
-  const userCredential = await signInWithCredential(auth, credential);
-  const user = userCredential.user;
-
-  if (!user.email) throw new Error("Email is required for registration");
-
-  const nameParts = user.displayName?.split(" ") || ["", ""];
-  const firstName = nameParts[0] || "";
-  const lastName = nameParts.slice(1).join(" ") || "";
-  const username = user.email.split("@")[0];
-
-  await createProfile(user.email, user.uid, firstName, lastName, username, user.photoURL || "", "vendors");
-
-  return user.uid;
+export const socialLogin = async (accessToken: string) => {
+  try {
+    const credential = GoogleAuthProvider.credential(null, accessToken);
+    const userCredential = await signInWithCredential(auth, credential);
+    const user = userCredential.user;
+    
+    // Check if user exists in vendors collection
+    const vendorExists = await checkVendorExists(user.uid);
+    
+    if (!vendorExists) {
+      const nameParts = user.displayName?.split(' ') || ['', ''];
+      const firstname = nameParts[0];
+      const lastname = nameParts[nameParts.length - 1];
+      
+      await createProfile(
+        user.email || '',
+        user.uid,
+        firstname,
+        lastname,
+        firstname.toLowerCase() + lastname.toLowerCase(),
+        user.photoURL || '',
+        'vendor'
+      );
+    }
+    
+    // Fetch and save vendor data
+    const vendorData = await fetchVendorData(user.uid);
+    saveVendorToStorage(vendorData);
+    
+    return { user, vendorData };
+  } catch (error) {
+    console.error("Social login error:", error);
+    throw error;
+  }
 };
 
 // Custom Hook: Google Sign-In
@@ -124,13 +174,47 @@ export const useSocialLogin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (token: string) => socialLogin(token),
-
-    onSuccess: (userId) => {
-      console.log("Google Sign-In Success:", userId);
+    mutationFn: (accessToken: string) => socialLogin(accessToken),
+    onSuccess: (data) => {
+      console.log("Google Sign-In Success:", data.user);
+      console.log("Vendor data:", data.vendorData);
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
+    onError: (error) => {
+      throw new Error(
+        error instanceof Error ? error.message : "Unknown error occurred"
+      );
+    },
+  });
+};
 
+// Function to handle logout
+export const logout = async () => {
+  try {
+    await signOut(auth);
+    localStorage.removeItem('vendorData'); // Remove vendor data specifically
+    sessionStorage.clear();
+  } catch (error) {
+    console.error("Logout error:", error);
+    throw error;
+  }
+};
+
+// Custom Hook: Logout
+export const useLogout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      // Clear all queries from the cache
+      queryClient.clear();
+      // Or if you want to be more specific, invalidate specific queries:
+      // queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      // queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      
+      console.log("Logged out successfully");
+    },
     onError: (error) => {
       throw new Error(
         error instanceof Error ? error.message : "Unknown error occurred"

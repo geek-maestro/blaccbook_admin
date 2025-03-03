@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -48,6 +48,7 @@ import {
   useBusinesses,
   useEditBizz,
 } from "@/services/business.service";
+import { auth } from "@/lib/firebaseConfig";
 
 const useBusiness = (initialBusinesses: any[]) => {
   const [businesses, setBusinesses] = useState(initialBusinesses);
@@ -101,6 +102,17 @@ const BusinessDetailsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
   const [editedBusiness, setEditedBusiness] = useState<IBusiness | null>(null);
+  // const user = auth.currentUser;
+
+  const userData = localStorage.getItem("vendorData")
+
+  useEffect(() => {
+    if (userData) {
+      console.log(userData, "user");
+    } else {
+      navigate("/login");
+    }
+  }, [userData]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -109,6 +121,8 @@ const BusinessDetailsPage = () => {
   if (fetchError) {
     return <div>Error loading business</div>;
   }
+
+  
 
   if (!business) {
     return (
@@ -142,7 +156,12 @@ const BusinessDetailsPage = () => {
     if (!editedBusiness) return;
 
     updateBusiness(
-      { id, ...editedBusiness },
+      {
+        id,
+        createdAt: new Date().toISOString(),
+        isBanned: false,
+        ...editedBusiness,
+      },
       {
         onSuccess: () => {
           setIsEditModalOpen(false);
@@ -166,10 +185,10 @@ const BusinessDetailsPage = () => {
   const handleBan = () => {
     if (business?.id) {
       banBusiness(
-        { 
+        {
           id: business.id,
           ...business, // Spread existing business data
-          isBanned: true // Override the isBanned property
+          isBanned: true, // Override the isBanned property
         },
         {
           onSuccess: () => {
@@ -311,18 +330,22 @@ const BusinessDetailsPage = () => {
                 <DropdownMenuItem onSelect={handleEdit}>
                   <Edit className="mr-2 h-4 w-4" /> Edit Business
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => setIsDeleteModalOpen(true)}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Business
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => setIsBanModalOpen(true)}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Ban className="mr-2 h-4 w-4" /> Ban Business
-                </DropdownMenuItem>
+                {userData && userData?.role === "admin" && (
+                  <>
+                    <DropdownMenuItem
+                      onSelect={() => setIsDeleteModalOpen(true)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Business
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => setIsBanModalOpen(true)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Ban className="mr-2 h-4 w-4" /> Ban Business
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -334,14 +357,20 @@ const BusinessDetailsPage = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-3xl mb-2">{business.name}</CardTitle>
+                    <CardTitle className="text-3xl mb-2">
+                      {business.name}
+                    </CardTitle>
                     <CardDescription className="flex items-center text-lg">
                       <MapPin className="h-5 w-5 mr-2" />
-                      {business.contact.street}, {business.contact.city}, {business.contact.state}
+                      {business.contact.street}, {business.contact.city},{" "}
+                      {business.contact.state}
                     </CardDescription>
                   </div>
                   {business.rating && (
-                    <Badge variant="secondary" className="flex items-center gap-2 text-lg p-2">
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-2 text-lg p-2"
+                    >
                       <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                       {business.rating}
                     </Badge>
@@ -380,7 +409,8 @@ const BusinessDetailsPage = () => {
                         </div>
                         <div className="flex items-center">
                           <Calendar className="h-5 w-5 mr-2 text-gray-500" />
-                          Established on {formatDate(business?.createdAt as string)}
+                          Established on{" "}
+                          {formatDate(business?.createdAt as string)}
                         </div>
                       </div>
                     </div>
@@ -400,7 +430,9 @@ const BusinessDetailsPage = () => {
 
                     {business.categories && business.categories.length > 0 && (
                       <div>
-                        <h2 className="text-xl font-semibold mb-3">Categories</h2>
+                        <h2 className="text-xl font-semibold mb-3">
+                          Categories
+                        </h2>
                         <div className="flex flex-wrap gap-2">
                           {business.categories.map((category: any) => (
                             <Badge key={category} variant="secondary">
@@ -425,7 +457,9 @@ const BusinessDetailsPage = () => {
                             <img
                               key={index}
                               src={image}
-                              alt={`${business.name} gallery image ${index + 1}`}
+                              alt={`${business.name} gallery image ${
+                                index + 1
+                              }`}
                               className="w-full h-40 object-cover rounded-lg"
                             />
                           )) || <p>No images available</p>}
@@ -436,7 +470,8 @@ const BusinessDetailsPage = () => {
                       {business.isBookable && business.bookableDetails && (
                         <Button className="flex-1">
                           Book{" "}
-                          {business.bookableDetails.bookableItemName || "Service"}
+                          {business.bookableDetails.bookableItemName ||
+                            "Service"}
                         </Button>
                       )}
 
@@ -456,12 +491,17 @@ const BusinessDetailsPage = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Products</CardTitle>
-                  <CardDescription>Available products and services</CardDescription>
+                  <CardDescription>
+                    Available products and services
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                     {business.products.map((product, index) => (
-                      <Card key={index} className="group hover:shadow-lg transition-shadow duration-200">
+                      <Card
+                        key={index}
+                        className="group hover:shadow-lg transition-shadow duration-200"
+                      >
                         <div className="relative h-48">
                           <img
                             src={product.image || "/placeholder-image.png"}
@@ -470,8 +510,12 @@ const BusinessDetailsPage = () => {
                           />
                         </div>
                         <CardContent className="flex-1 p-4 space-y-2">
-                          <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
-                          <p className="text-blue-600 font-bold text-xl">${product.price.toFixed(2)}</p>
+                          <h3 className="font-semibold text-lg line-clamp-2">
+                            {product.name}
+                          </h3>
+                          <p className="text-blue-600 font-bold text-xl">
+                            ${product.price.toFixed(2)}
+                          </p>
                         </CardContent>
                       </Card>
                     ))}

@@ -46,15 +46,13 @@ function Login() {
       .then((result) => {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential?.accessToken && result.user) {
-          socialLogin(
-            credential.accessToken,
-            {
-              onSuccess: () => navigate("/home"),
-              onError: (error) => {
-                console.error("Social login error:", error);
-              }
+          console.log(credential.accessToken, "credential", result.user, "user");
+          socialLogin(credential.accessToken, {
+            onSuccess: () => navigate("/home"),
+            onError: (error) => {
+              console.error("Social login error:", error);
             }
-          );
+          });
         }
       })
       .catch((error) => {
