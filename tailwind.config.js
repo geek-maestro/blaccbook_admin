@@ -51,6 +51,26 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			}
+  		},
+  		keyframes: {
+  			"fade-in": {
+  				"0%": { opacity: "0" },
+  				"100%": { opacity: "1" }
+  			},
+  			"fade-in-scale": {
+  				"0%": { 
+  					opacity: "0",
+  					transform: "scale(0.9)"
+  				},
+  				"100%": { 
+  					opacity: "1",
+  					transform: "scale(1)"
+  				}
+  			}
+  		},
+  		animation: {
+  			"fade-in": "fade-in 1s ease-in-out",
+  			"fade-in-scale": "fade-in-scale 0.7s ease-out"
   		}
   	}
   },

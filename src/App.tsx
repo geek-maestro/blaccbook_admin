@@ -8,13 +8,15 @@ import Signup from './Auth/Signup';
 import BusinessList from './Pages/Businesses';
 import BusinessDetailsPage from './components/BusinessDetails';
 import SettingsPage from './Pages/Settings';
+import SplashScreen from './components/SplashScreen';
+
 function App() {
   return (
     <Router>
       <div className="App">
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<SplashScreen />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           {/* <Route path="/signup" element={<SignUp />} /> */}
@@ -24,7 +26,7 @@ function App() {
           <Route path="/home2" element={<BusinessDashboard2 />} />
           <Route path="/business" element={<BusinessList />} />
           <Route path="/settings" element={<SettingsPage />} />
-             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
+          <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
         </Routes>
       </div>
     </Router>
