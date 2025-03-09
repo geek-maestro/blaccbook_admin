@@ -5,6 +5,7 @@ import BusinessDashboard2 from './Pages/Dashboard2';
 // Page Imports
 import Login from './Auth/Login';
 import Signup from './Auth/Signup';
+import ForgotPassword from './Auth/ForgotPassword';
 import BusinessList from './Pages/Businesses';
 import BusinessDetailsPage from './components/BusinessDetails';
 import SettingsPage from './Pages/Settings';
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<SplashScreen />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           {/* <Route path="/signup" element={<SignUp />} /> */}
 
           {/* General Routes */}
