@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu } from "lucide-react";
+import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, MessageCircle, Settings, LogOut, Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,12 @@ function Sidebar() {
       label: 'Reviews',
       description: 'Communications'
     },
+    {
+      path: '/chat',
+      icon: MessageCircle, 
+      label: 'Chat',
+      description: 'Chat Messaging'
+    },
     { 
       path: '/settings', 
       icon: Settings, 
@@ -91,7 +97,7 @@ function Sidebar() {
       <Separator className="bg-blue-500/30" />
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-6">
+      <nav className="flex-1 overflow-y-auto py-6 scrollbar-hide">
         <ul className="space-y-1 px-3">
           {navItems.map((item) => {
             const Icon = item.icon;

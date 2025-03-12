@@ -13,6 +13,7 @@ import BusinessList from "./Pages/Businesses";
 import BusinessDetailsPage from "./components/BusinessDetails";
 import SettingsPage from "./Pages/Settings";
 import Investments from "./Pages/Investments";
+import Chat from "./Pages/Chat";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/investments" element={<Investments />} />
             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
+            <Route path="/Chat" element={<Chat />} />
           </Routes>
         </div>
       </QueryClientProvider>
