@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, MessageCircle, Settings, LogOut, Menu } from "lucide-react";
+import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, MessageCircle, Settings, Bell, LogOut, Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,12 @@ function Sidebar() {
       icon: MessageCircle, 
       label: 'Chat',
       description: 'Chat Messaging'
+    },
+    {
+      path: '/notification',
+      icon: Bell, 
+      label: 'Notification',
+      description: 'Notification'
     },
     { 
       path: '/settings', 

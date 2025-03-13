@@ -192,19 +192,19 @@ export default function ChatInterface() {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-col flex-1">
         {/* Header */}
-        <header className="border-b p-4  shadow-md z-10">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-bold justify-start md:justify-end">Chat</h1>
+        <header className="z-10 p-4  border-b-2 border-gray-400">
+          <div className="flex items-center justify-between ">
+            <h1 className="justify-start text-3xl font-bold md:justify-end">Chat</h1>
             <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
-              <Menu className="h-6 w-6" />
+              <Menu className="w-6 h-6" />
             </Button>
           </div>
         </header>
 
         {/* Main content */}
-        <div className="flex flex-1 overflow-hidden m-3">
+        <div className="flex flex-1 m-3 overflow-hidden">
           {/* Sidebar - with responsive behavior */}
           <div
             className={`
@@ -216,17 +216,17 @@ export default function ChatInterface() {
             {/* Mobile sidebar header with close button */}
             {isMobile && (
               <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-l font-bold">Recent Conversations</h3>
+                <h3 className="font-bold text-l">Recent Conversations</h3>
                 <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-                  <X className="h-5 w-5" />
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             )}
             {/* Desktop */}
-            <div className="p-4 h-full overflow-y-auto m-2 border-2 shadow-sm rounded-md">
+            <div className="h-full p-4 m-2 overflow-y-auto border-2 rounded-md shadow-sm">
               {!isMobile && <h3 className="mb-4 text-2xl font-bold">Recent Conversations</h3>}
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
                 <Input placeholder="Search chat..." className="pl-10 rounded-full shadow-sm" />
               </div>
 
@@ -255,7 +255,7 @@ export default function ChatInterface() {
                       <p className="truncate text-muted-foreground">{conversation.lastMessage}</p>
                     </div>
                     {conversation.unreadCount && (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white shadow-sm">
+                      <div className="flex items-center justify-center w-6 h-6 text-xs text-white bg-blue-500 rounded-full shadow-sm">
                         {conversation.unreadCount}
                       </div>
                     )}
@@ -266,12 +266,12 @@ export default function ChatInterface() {
           </div>
 
           {/* Overlay for mobile sidebar */}
-          {isMobile && sidebarOpen && <div className="fixed inset-0 bg-black/30 z-10" onClick={toggleSidebar} />}
+          {isMobile && sidebarOpen && <div className="fixed inset-0 z-10 bg-black/30" onClick={toggleSidebar} />}
 
           {/* Chat area */}
-          <div className="flex flex-1 flex-col border-2 shadow-lg rounded-xl">
+          <div className="flex flex-col flex-1 border-2 shadow-lg rounded-xl">
             {/* Chat header */}
-            <div className="flex items-center justify-between bg-white border-b p-4">
+            <div className="flex items-center justify-between p-4 bg-white border-b">
               <div className="flex items-center gap-3">
                 <AvatarWithInitials
                   initials={activeConversation.contact.initials}
@@ -282,15 +282,15 @@ export default function ChatInterface() {
               </div>
               <Button
                 variant="outline"
-                className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm"
+                className="text-red-500 border-red-500 shadow-sm hover:bg-red-50 hover:text-red-600"
               >
                 Clear chat
               </Button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-200">
-              <div className="text-center text-sm text-muted-foreground">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-gray-200">
+              <div className="text-sm text-center text-muted-foreground">
                 Today {formatTime(new Date("2025-03-12T11:32:00"))}
               </div>
 
@@ -308,7 +308,7 @@ export default function ChatInterface() {
             </div>
 
             {/* Message input */}
-            <div className="border-t p-4 bg-white shadow-md">
+            <div className="p-4 bg-white border-t shadow-md">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Input
@@ -322,16 +322,16 @@ export default function ChatInterface() {
                       }
                     }}
                   />
-                  <Button size="icon" variant="ghost" className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Image className="h-5 w-5 text-muted-foreground" />
+                  <Button size="icon" variant="ghost" className="absolute -translate-y-1/2 right-2 top-1/2">
+                    <Image className="w-5 h-5 text-muted-foreground" />
                   </Button>
                 </div>
                 <Button
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-blue-500 hover:bg-blue-600 shadow-md"
+                  className="w-10 h-10 bg-blue-500 rounded-full shadow-md hover:bg-blue-600"
                   onClick={handleSendMessage}
                 >
-                  <Send className="h-5 w-5" />
+                  <Send className="w-5 h-5" />
                 </Button>
               </div>
             </div>
