@@ -15,6 +15,7 @@ import SettingsPage from "./Pages/Settings";
 import Investments from "./Pages/Investments";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Bookings from "./Pages/Bookings";
 
 const client = new QueryClient();
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/business" element={<BusinessList />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/investments" element={<Investments />} />
+            <Route path="/booking" element={<Bookings />} />
             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
           </Routes>
         </div>
