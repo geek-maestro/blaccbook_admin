@@ -37,6 +37,7 @@ function App() {
             <Route path="/investments" element={<Investments />} />
             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />
           </Routes>
+          {/* <Toaster /> removed because it does not exist. If you want to use ToastProvider/ToastViewport, add them here. */}
         </div>
       </QueryClientProvider>
     </Router>

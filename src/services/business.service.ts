@@ -162,3 +162,4 @@ export const useBusinesses = () => {
     queryFn: getBusiness,
   });
 };
+ 

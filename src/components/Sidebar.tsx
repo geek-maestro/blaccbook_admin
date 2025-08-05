@@ -55,12 +55,12 @@ function Sidebar() {
       label: 'Investment',
       description: 'investors & money'
     },
-    { 
-      path: '/report', 
-      icon: FileText, 
-      label: 'Reports',
-      description: 'Analytics'
-    },
+    // { 
+    //   path: '/report', 
+    //   icon: FileText, 
+    //   label: 'Reports',
+    //   description: 'Analytics'
+    // },
     { 
       path: '/message', 
       icon: MessageSquare, 

@@ -158,6 +158,32 @@ const AddBusinessForm = () => {
                 className="h-20"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="categories">Category</Label>
+              <Select
+                value={formData.categories && formData.categories[0] ? formData.categories[0] : ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    categories: value ? [value] : [],
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Restaurants">Restaurants – Book tables or order food from top restaurants.</SelectItem>
+                  <SelectItem value="Perfume">Perfume – Browse and purchase your favorite perfumes and fragrances.</SelectItem>
+                  <SelectItem value="Barbering">Barbering – Book barber appointments for haircuts and grooming services.</SelectItem>
+                  <SelectItem value="Cleaning">Cleaning – Schedule professional home or office cleaning services.</SelectItem>
+                  <SelectItem value="Hotels">Hotels – Book hotel rooms, resorts, and accommodations.</SelectItem>
+                  <SelectItem value="Plumbering">Plumbering – Request expert plumbing services for repairs and installations.</SelectItem>
+                  <SelectItem value="Health">Health – Access healthcare services, wellness programs, and appointments.</SelectItem>
+                  <SelectItem value="More">More – Explore additional categories and offerings.</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Contact Information */}
