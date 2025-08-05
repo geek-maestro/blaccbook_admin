@@ -61,12 +61,12 @@ function Sidebar() {
     //   label: 'Reports',
     //   description: 'Analytics'
     // },
-    { 
-      path: '/message', 
-      icon: MessageSquare, 
-      label: 'Reviews',
-      description: 'Communications'
-    },
+    // { 
+    //   path: '/message', 
+    //   icon: MessageSquare, 
+    //   label: 'Reviews',
+    //   description: 'Communications'
+    // },
     { 
       path: '/settings', 
       icon: Settings, 
