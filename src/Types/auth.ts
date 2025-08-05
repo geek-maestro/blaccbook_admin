@@ -8,6 +8,8 @@ type IUser = {
   role: string;
   username: string;
   verifications?: object;
+  createdAt: string;
+  isActive?: boolean;
 };
 
 export type { IUser };
