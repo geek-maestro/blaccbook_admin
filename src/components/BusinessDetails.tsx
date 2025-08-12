@@ -49,6 +49,7 @@ import {
   useEditBizz,
 } from "@/services/business.service";
 import { auth } from "@/lib/firebaseConfig";
+import { useToast } from "@/components/ui/use-toast";
 
 const useBusinessData = (initialBusinesses: any[]) => {
   const [businesses, setBusinesses] = useState(initialBusinesses);
@@ -78,6 +79,7 @@ const useBusinessData = (initialBusinesses: any[]) => {
 const BusinessDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
   const {
     data: business,
     isLoading,
@@ -102,6 +104,8 @@ const BusinessDetailsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
   const [editedBusiness, setEditedBusiness] = useState<IBusiness | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageFiles, setImageFiles] = useState<{ [key: string]: File }>({});
   // const user = auth.currentUser;
 
   const userData = JSON.parse(localStorage.getItem("vendorData") || "{}");
@@ -152,25 +156,105 @@ const BusinessDetailsPage = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleUpdate = (id: string) => {
-    if (!editedBusiness) return;
+  const handleUpdate = async (id: string) => {
+    if (!editedBusiness || !business?.id) return;
 
-    updateBusiness(
-      {
+    setUploadingImages(true);
+
+    try {
+      // First update the business data without images
+      const businessDataToUpdate = {
         id,
         createdAt: new Date().toISOString(),
         isBanned: false,
         ...editedBusiness,
-      },
-      {
-        onSuccess: () => {
+        // Remove image URLs that are temporary blob URLs
+        featuredImage: editedBusiness.featuredImage?.startsWith('blob:') ? business.featuredImage : editedBusiness.featuredImage,
+        images: editedBusiness.images?.filter(img => !img.startsWith('blob:')) || [],
+      };
+
+      // Upload new images if any
+      const uploadedImages: string[] = [];
+      let uploadErrors: string[] = [];
+
+      // Upload featured image if it's a new file
+      if (imageFiles.featuredImage && business.id) {
+        try {
+          const { uploadBusinessImage } = await import("@/services/imageUpload.service");
+          const featuredImageUrl = await uploadBusinessImage(imageFiles.featuredImage, business.id, 'featured');
+          businessDataToUpdate.featuredImage = featuredImageUrl;
+        } catch (error) {
+          console.error("Error uploading featured image:", error);
+          uploadErrors.push("Featured image upload failed");
+        }
+      }
+
+      // Upload gallery images if any
+      const galleryFiles = Object.entries(imageFiles)
+        .filter(([key]) => key.startsWith('gallery_'))
+        .map(([_, file]) => file);
+
+      if (galleryFiles.length > 0 && business.id) {
+        try {
+          const { uploadBusinessImage } = await import("@/services/imageUpload.service");
+          const galleryImageUrls = await Promise.all(
+            galleryFiles.map(file => uploadBusinessImage(file, business.id!, 'gallery'))
+          );
+          uploadedImages.push(...galleryImageUrls);
+        } catch (error) {
+          console.error("Error uploading gallery images:", error);
+          uploadErrors.push("Gallery images upload failed");
+        }
+      }
+
+      // Add uploaded gallery images to the business data
+      if (uploadedImages.length > 0) {
+        businessDataToUpdate.images = [
+          ...(businessDataToUpdate.images || []),
+          ...uploadedImages
+        ];
+      }
+
+      // Update the business using the mutation
+      updateBusiness(businessDataToUpdate, {
+        onSuccess: (result) => {
           setIsEditModalOpen(false);
+          setUploadingImages(false);
+          setImageFiles({});
+          setEditedBusiness(null);
+          
+          if (uploadErrors.length > 0) {
+            toast({
+              title: "Business Updated with Warnings",
+              description: `Business updated successfully, but some images failed to upload: ${uploadErrors.join(', ')}`,
+              variant: "default",
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: "Business updated successfully!",
+            });
+          }
         },
         onError: (error: unknown) => {
           console.error("Error updating business:", error);
+          setUploadingImages(false);
+          toast({
+            title: "Error",
+            description: "Failed to update business. Please try again.",
+            variant: "destructive",
+          });
         },
-      }
-    );
+      });
+    } catch (error) {
+      console.error("Error in update process:", error);
+      setUploadingImages(false);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // const handleSaveEdit = () => {
@@ -233,20 +317,27 @@ const BusinessDetailsPage = () => {
     });
   };
 
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "featuredImage" | "images"
   ) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || !business?.id) return;
 
     if (field === "featuredImage") {
-      const imageUrl = URL.createObjectURL(files[0]);
+      const file = files[0];
+      setImageFiles(prev => ({ ...prev, featuredImage: file }));
+      const imageUrl = URL.createObjectURL(file);
       handleInputChange("featuredImage", imageUrl);
     } else {
-      const imageUrls = Array.from(files).map((file) =>
-        URL.createObjectURL(file)
-      );
+      const newFiles = Array.from(files);
+      const imageUrls = newFiles.map((file) => URL.createObjectURL(file));
+      
+      // Store files for later upload
+      newFiles.forEach((file, index) => {
+        setImageFiles(prev => ({ ...prev, [`gallery_${Date.now()}_${index}`]: file }));
+      });
+
       handleInputChange("images", [
         ...(editedBusiness?.images || []),
         ...imageUrls,
@@ -254,11 +345,15 @@ const BusinessDetailsPage = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const imageUrls = Array.from(e.target.files).map((file) =>
-      URL.createObjectURL(file)
-    );
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !business?.id) return;
+    const newFiles = Array.from(e.target.files);
+    const imageUrls = newFiles.map((file) => URL.createObjectURL(file));
+
+    // Store files for later upload
+    newFiles.forEach((file, index) => {
+      setImageFiles(prev => ({ ...prev, [`gallery_${Date.now()}_${index}`]: file }));
+    });
 
     handleInputChange("images", [
       ...(editedBusiness?.images || []),
@@ -450,19 +545,41 @@ const BusinessDetailsPage = () => {
                       <h2 className="text-xl font-semibold mb-3 flex items-center">
                         <ImageIcon className="h-5 w-5 mr-2" /> Gallery
                       </h2>
+                      
+                      {/* Featured Image */}
+                      {business.featuredImage && (
+                        <div className="mb-4">
+                          <h3 className="text-sm font-medium mb-2">Featured Image</h3>
+                          <img
+                            src={business.featuredImage}
+                            alt={`${business.name} featured`}
+                            className="w-full h-48 object-cover rounded-lg"
+                            onError={(e) => {
+                              console.error('Featured image failed to load:', business.featuredImage || 'undefined');
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Gallery Images */}
                       <div className="grid grid-cols-2 gap-4">
-                        {business.images
-                          ?.slice(0, 4)
-                          .map((image: any, index: number) => (
+                        {business.images && business.images.length > 0 ? (
+                          business.images.map((image: any, index: number) => (
                             <img
                               key={index}
                               src={image}
-                              alt={`${business.name} gallery image ${
-                                index + 1
-                              }`}
+                              alt={`${business.name} gallery image ${index + 1}`}
                               className="w-full h-40 object-cover rounded-lg"
+                              onError={(e) => {
+                                console.error(`Gallery image ${index} failed to load:`, image);
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
-                          )) || <p>No images available</p>}
+                          ))
+                        ) : (
+                          <p className="text-gray-500">No gallery images available</p>
+                        )}
                       </div>
                     </div>
 
@@ -911,8 +1028,9 @@ const BusinessDetailsPage = () => {
                 <Button
                   type="submit"
                   onClick={() => handleUpdate(editedBusiness?.id as string)}
+                  disabled={updating || uploadingImages}
                 >
-                  {updating ? "Updating..." : "Save Changes"}
+                  {updating || uploadingImages ? "Updating..." : "Save Changes"}
                 </Button>
               </DialogFooter>
             </DialogContent>

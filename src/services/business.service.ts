@@ -107,7 +107,7 @@ export const useEditBizz = () => {
       editBusiness(business),
 
     onSuccess: (_, variables) => {
-      console.log("Business updated successfully!");
+      // Invalidate both the specific business and the list to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["business", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["business"] });
     },
@@ -124,15 +124,29 @@ export const useEditBizz = () => {
 };
 
 const getBusiness = async () => {
-  const filter: IFilters[] = [
-    { key: "isBookable", operator: "!=", value: "true" },
-  ];
-  return await getByFilters("business", filter)
-    .then((res) => res.data)
-    .catch((error) => {
-      console.error("Error fetching businesses:", error);
-      throw new Error("An error occurred while fetching businesses.");
-    });
+  try {
+    const filter: IFilters[] = [
+      { key: "isBookable", operator: "!=", value: "true" },
+    ];
+    
+    const result = await getByFilters("business", filter);
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    
+    // Ensure images are properly formatted
+    const businessesWithImages = result.data.map((business: any) => ({
+      ...business,
+      images: Array.isArray(business.images) ? business.images : [],
+      featuredImage: business.featuredImage || null
+    }));
+    
+    return businessesWithImages;
+  } catch (error) {
+    console.error("Error fetching businesses:", error);
+    throw new Error("An error occurred while fetching businesses.");
+  }
 };
 
 const getBusinessById = async (id: string) => {
