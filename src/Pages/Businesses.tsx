@@ -38,7 +38,13 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex gap-4">
               <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
-                <AvatarImage src={business.featuredImage} alt={business.name} />
+                <AvatarImage 
+                  src={business.featuredImage} 
+                  alt={business.name}
+                  onError={(e) => {
+                    console.error('Avatar image failed to load:', business.featuredImage);
+                  }}
+                />
                 <AvatarFallback>{business.name[0]}</AvatarFallback>
               </Avatar>
               <div>

@@ -1,8 +1,6 @@
-import  { useState } from 'react';
-
+import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { Search, Star, TrendingUp, Users, DollarSign, Clock } from "lucide-react";
-
 import {
   Card,
   CardContent,
@@ -11,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 function BusinessDashboard() {
-//   const [reviews, setReviews] = useState([]);
-//   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState("week");
-
- 
 
   const metrics = [
     {
