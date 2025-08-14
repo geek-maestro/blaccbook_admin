@@ -1,10 +1,40 @@
-import { addDoc, collection, doc, getDocs, query, updateDoc, where, WhereFilterOp, getDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, query, updateDoc, where, WhereFilterOp, getDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 export interface IFilters {
    key: string;
    operator: WhereFilterOp;
    value: string
+}
+
+const getAll = async (collectionPath: string) => {
+    const result: { data: any[], error: string } = { data: [], error: "" };
+    try {
+        const snapshot = await getDocs(collection(db, collectionPath));
+        snapshot.forEach((docSnap) => {
+            result.data.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        return result;
+    } catch (err) {
+        result.error = err instanceof Error ? err.message : 'Unknown error occurred';
+        return result;
+    }
+}
+
+const put = async (collectionPath: string, docId: string, object: Record<string, any>) => {
+    const result = { success: false, error: "" };
+    if (!docId) {
+        result.error = "Document ID is required.";
+        return result;
+    }
+    try {
+        await setDoc(doc(db, collectionPath, docId), object);
+        result.success = true;
+        return result;
+    } catch (err) {
+        result.error = err instanceof Error ? err.message : 'Unknown error occurred';
+        return result;
+    }
 }
 
 const post = async (collectionPath: string, object: Record<string, any>) => {
@@ -89,4 +119,20 @@ const getById = async (collectionPath: string, docId: string) => {
         });
 }
 
-export { post, getByFilters, update, getById };
+const remove = async (collectionPath: string, docId: string) => {
+    const result = { success: false, error: "" };
+    if (!docId) {
+        result.error = "Document ID is required.";
+        return result;
+    }
+    try {
+        await deleteDoc(doc(db, collectionPath, docId));
+        result.success = true;
+        return result;
+    } catch (err) {
+        result.error = err instanceof Error ? err.message : 'Unknown error occurred';
+        return result;
+    }
+}
+
+export { post, getByFilters, getAll, put, update, getById, remove };

@@ -371,14 +371,14 @@ const SettingsPage = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">User ID</Label>
                         <Input 
                           value={user?.userId || ''} 
                           disabled 
                           className="bg-gray-50 font-mono text-sm"
                         />
-                      </div>
+                      </div> */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">Account Created</Label>
                         <Input 

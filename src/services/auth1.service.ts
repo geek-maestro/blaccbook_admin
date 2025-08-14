@@ -28,9 +28,14 @@ const saveVendorToStorage = (vendorData: any) => {
 // Function to sign in with credentials
 const credSignIn = async (email: string, password: string) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
-  const vendorData = await fetchVendorData(userCred.user.uid);
-  saveVendorToStorage(vendorData);
-  return { user: userCred.user, vendorData };
+  try {
+    const vendorData = await fetchVendorData(userCred.user.uid);
+    saveVendorToStorage(vendorData);
+    return { user: userCred.user, vendorData };
+  } catch (err) {
+    console.warn("Vendor profile not found for user:", userCred.user.uid);
+    return { user: userCred.user, vendorData: null } as const;
+  }
 };
 
 // Custom Hook: Sign in with Email & Password
@@ -41,8 +46,14 @@ export const useCredSignIn = () => {
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       credSignIn(email, password),
     onSuccess: (data) => {
-      console.log("Signed in:", data.user);
-      console.log("Vendor data:", data.vendorData);
+      console.log("Signed in:", { uid: data.user?.uid, email: data.user?.email });
+      if (data.vendorData) {
+        console.log("Vendor data:", data.vendorData);
+      } else {
+        console.warn(
+          "Vendor data not found. Ensure a document exists in 'vendors' with userId = UID."
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
     onError: (error) => {
