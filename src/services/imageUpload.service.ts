@@ -121,3 +121,22 @@ export const uploadProductImage = async (file: File, businessId: string, product
     throw new Error('Failed to upload product image');
   }
 }; 
+
+export const uploadMerchantImage = async (file: File, merchantId: string): Promise<string> => {
+  try {
+    if (!file) throw new Error('No file provided');
+    if (!file.type.startsWith('image/')) throw new Error('File must be an image');
+    if (!merchantId || merchantId.trim() === '') throw new Error('Merchant ID is required');
+
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${merchantId}_featured_${timestamp}.${fileExtension}`;
+    const storageRef = ref(storage, `merchant-images/${merchantId}/${fileName}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading merchant image:', error);
+    throw new Error('Failed to upload merchant image');
+  }
+};
