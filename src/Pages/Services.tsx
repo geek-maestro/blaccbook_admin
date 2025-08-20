@@ -5,10 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ServiceForm from "@/components/ServiceForm";
-import { useDeleteService, useServices } from "@/services/service.service";
+import { useDeleteService, useServices, useMyServices } from "@/services/service.service";
+import { useUserProfile } from "@/services/profile.service";
 
 const ServicesPage: React.FC = () => {
-  const { data: services, isLoading, error } = useServices();
+  const { data: profile } = useUserProfile();
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const { data: allServices, isLoading: loadingAll, error: errorAll } = useServices();
+  const { data: myServices, isLoading: loadingMine, error: errorMine } = useMyServices();
+  const services = isSuperAdmin ? allServices : myServices;
+  const isLoading = isSuperAdmin ? loadingAll : loadingMine;
+  const error = isSuperAdmin ? errorAll : errorMine;
   const { mutate: remove } = useDeleteService();
 
   const formatAvailability = (value: any) => {

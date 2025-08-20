@@ -1,6 +1,7 @@
-import { getByFilters, IFilters, post, update, getById } from "@/lib/firestoreCrud";
+import { getAll, getByFilters, IFilters, post, update, getById } from "@/lib/firestoreCrud";
 import { IBusiness } from "@/Types/business";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { auth } from "@/lib/firebaseConfig";
 
 const addBusiness = async ({
   name,
@@ -19,6 +20,7 @@ const addBusiness = async ({
   address,
   rating,
 }: IBusiness) => {
+  const ownerUserId = auth.currentUser?.uid || "";
   return post("business", {
     name,
     email,
@@ -35,6 +37,7 @@ const addBusiness = async ({
     description,
     rating,
     featuredImage,
+    ownerUserId,
   });
 };
 
@@ -125,11 +128,7 @@ export const useEditBizz = () => {
 
 const getBusiness = async () => {
   try {
-    const filter: IFilters[] = [
-      { key: "isBookable", operator: "!=", value: "true" },
-    ];
-    
-    const result = await getByFilters("business", filter);
+    const result = await getAll("business");
     
     if (result.error) {
       throw new Error(result.error);
@@ -147,6 +146,14 @@ const getBusiness = async () => {
     console.error("Error fetching businesses:", error);
     throw new Error("An error occurred while fetching businesses.");
   }
+};
+
+const getMyBusinesses = async () => {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [] as IBusiness[];
+  const result = await getByFilters("business", [{ key: "ownerUserId", operator: "==", value: uid }]);
+  if (result.error) throw new Error(result.error);
+  return result.data as IBusiness[];
 };
 
 const getBusinessById = async (id: string) => {
@@ -174,6 +181,13 @@ export const useBusinesses = () => {
   return useQuery({
     queryKey: ["business"],
     queryFn: getBusiness,
+  });
+};
+
+export const useMyBusinesses = () => {
+  return useQuery({
+    queryKey: ["business","mine"],
+    queryFn: getMyBusinesses,
   });
 };
  

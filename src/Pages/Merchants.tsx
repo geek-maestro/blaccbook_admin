@@ -5,11 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import MerchantForm from "@/components/MerchantForm";
-import { useDeleteMerchant, useMerchants } from "@/services/merchant.service";
+import { useDeleteMerchant, useMerchants, useMyMerchant } from "@/services/merchant.service";
+import { useUserProfile } from "@/services/profile.service";
+import { auth } from "@/lib/firebaseConfig";
 
 const MerchantsPage: React.FC = () => {
-  const { data: merchants, isLoading, error } = useMerchants();
+  const { data: profile } = useUserProfile();
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const { data: merchantsAll, isLoading: loadingAll, error: errorAll } = useMerchants(!!isSuperAdmin);
+  const { data: merchantsMine, isLoading: loadingMine, error: errorMine } = useMyMerchant();
+  const merchants = isSuperAdmin ? merchantsAll : merchantsMine;
+  const isLoading = isSuperAdmin ? loadingAll : loadingMine;
+  const error = isSuperAdmin ? errorAll : errorMine;
   const { mutate: remove } = useDeleteMerchant();
+  const uid = auth.currentUser?.uid;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -19,9 +28,11 @@ const MerchantsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <TabsList>
               <TabsTrigger value="list">Merchants</TabsTrigger>
-              <TabsTrigger value="create">Create</TabsTrigger>
+              {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : (
+                <TabsTrigger value="create">Create</TabsTrigger>
+              )}
             </TabsList>
-            <MerchantForm />
+            {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : <MerchantForm />}
           </div>
           <TabsContent value="list">
             {isLoading && <div>Loading...</div>}
@@ -63,23 +74,27 @@ const MerchantsPage: React.FC = () => {
                       )}
                     </div>
                     <div className="mt-4 flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => remove(m.id)}>Delete</Button>
+                      {(isSuperAdmin || m.ownerUserId === uid) && (
+                        <Button variant="outline" size="sm" onClick={() => remove(m.id)}>Delete</Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="create">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create Merchant</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MerchantForm />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : (
+            <TabsContent value="create">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create Merchant</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <MerchantForm />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

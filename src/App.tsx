@@ -15,6 +15,7 @@ import SettingsPage from "./Pages/Settings";
 import Investments from "./Pages/Investments";
 import MerchantsPage from "./Pages/Merchants";
 import ServicesPage from "./Pages/Services";
+import BookingsPage from "./Pages/Bookings";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/business" element={<BusinessList />} />
             <Route path="/merchants" element={<MerchantsPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/investments" element={<Investments />} />
             <Route path="/businesses/:id" element={<BusinessDetailsPage />} />

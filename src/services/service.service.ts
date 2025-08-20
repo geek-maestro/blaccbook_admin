@@ -1,6 +1,7 @@
 import { getAll, getByFilters, getById, post, remove, update } from "@/lib/firestoreCrud";
 import { IService } from "@/Types/service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { auth } from "@/lib/firebaseConfig";
 
 const addService = async (service: IService) => {
   const { id, ...payload } = service as any;
@@ -36,6 +37,14 @@ export const useServices = () => useQuery({ queryKey: ["services"], queryFn: get
 export const useServicesByMerchant = (merchantId: string) =>
   useQuery({ queryKey: ["services", merchantId], queryFn: () => getServicesByMerchant(merchantId), enabled: !!merchantId });
 export const useServiceById = (id: string) => useQuery({ queryKey: ["services", id], queryFn: () => getServiceById(id), enabled: !!id });
+
+const getMyServices = async () => {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [] as Array<{ id: string } & IService>;
+  return getServicesByMerchant(uid);
+};
+
+export const useMyServices = () => useQuery({ queryKey: ["services","mine"], queryFn: getMyServices });
 
 export const useAddService = () => {
   const qc = useQueryClient();
