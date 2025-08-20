@@ -161,7 +161,7 @@ const ServiceForm: React.FC<Props> = ({ defaultMerchantId = "", onCreated }) => 
               <Input placeholder="lng" value={form.location?.lng ?? ''} onChange={(e) => setForm((p) => ({ ...p, location: { ...(p.location || { lat: 0, lng: 0 }), lng: Number(e.target.value || 0) } }))} />
             </div>
             <MapPicker
-              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyC1AgiXzAOqsl83Y_g7HxFMwO8MhMSM12s"}
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string}
               value={form.location || null}
               onChange={(coords) => setForm((p) => ({ ...p, location: coords }))}
               height="260px"

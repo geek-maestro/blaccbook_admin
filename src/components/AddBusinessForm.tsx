@@ -576,7 +576,7 @@ const AddBusinessForm = () => {
                 />
               </div>
               <MapPicker
-                apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyC1AgiXzAOqsl83Y_g7HxFMwO8MhMSM12s"}
+                apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string}
                 value={(formData.contact.mapLocation.lat && formData.contact.mapLocation.lng) ? { lat: Number(formData.contact.mapLocation.lat), lng: Number(formData.contact.mapLocation.lng) } : null}
                 onChange={(coords) => setFormData((prev) => ({
                   ...prev,
