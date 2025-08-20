@@ -24,6 +24,7 @@ import { useAddBizz } from "@/services/business.service";
 import { IBusiness } from "@/Types/business";
 import { features } from "process";
 import { useToast } from "@/components/ui/use-toast";
+import MapPicker from "@/components/MapPicker";
 
 const AddBusinessForm = () => {
   const [open, setOpen] = useState(false);
@@ -550,6 +551,37 @@ const AddBusinessForm = () => {
                 value={formData.address}
                 onChange={handleInputChange}
                 placeholder="123 Business Street"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Map Location</Label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <Input
+                  name="lat"
+                  placeholder="lat"
+                  value={formData.contact.mapLocation.lat}
+                  onChange={(e) => setFormData((prev) => ({
+                    ...prev,
+                    contact: { ...prev.contact, mapLocation: { ...prev.contact.mapLocation, lat: e.target.value } }
+                  }))}
+                />
+                <Input
+                  name="lng"
+                  placeholder="lng"
+                  value={formData.contact.mapLocation.lng}
+                  onChange={(e) => setFormData((prev) => ({
+                    ...prev,
+                    contact: { ...prev.contact, mapLocation: { ...prev.contact.mapLocation, lng: e.target.value } }
+                  }))}
+                />
+              </div>
+              <MapPicker
+                apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyC1AgiXzAOqsl83Y_g7HxFMwO8MhMSM12s"}
+                value={(formData.contact.mapLocation.lat && formData.contact.mapLocation.lng) ? { lat: Number(formData.contact.mapLocation.lat), lng: Number(formData.contact.mapLocation.lng) } : null}
+                onChange={(coords) => setFormData((prev) => ({
+                  ...prev,
+                  contact: { ...prev.contact, mapLocation: { ...prev.contact.mapLocation, lat: String(coords.lat), lng: String(coords.lng) } }
+                }))}
               />
             </div>
           </div>

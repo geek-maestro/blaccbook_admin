@@ -21,6 +21,7 @@ export type IReviewSummary = {
 export type IService = {
   id?: string; // Firestore doc id
   merchantId: string;
+  businessId?: string; // service belongs to a specific business
   icon: string; // URL
   serviceType: string;
   title: string;

@@ -12,6 +12,7 @@ export type IBusiness = {
     features?: string[],
     isBanned?: boolean,
     address?: string,
+    ownerUserId?: string,
     isEcommerce?: boolean, // CAN YOU BUY FROM THEM ONLINE
     isBookable: boolean, // CAN YOU MAKE A BOOKING OR RESERVATION
     hasMenu: boolean, // IF IT HAS A FOOD MENU

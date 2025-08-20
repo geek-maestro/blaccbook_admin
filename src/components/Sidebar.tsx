@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu, Store, Wrench } from "lucide-react";
+import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu, Store, Wrench, CalendarClock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,12 @@ function Sidebar() {
       icon: Wrench,
       label: 'Services',
       description: 'What merchants provide'
+    },
+    {
+      path: '/bookings',
+      icon: CalendarClock,
+      label: 'Bookings',
+      description: 'Calls & bookings'
     },
     { 
       path: '/investments', 

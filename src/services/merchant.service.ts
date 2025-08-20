@@ -1,4 +1,4 @@
-import { getAll, post, put, update, remove, getById } from "@/lib/firestoreCrud";
+import { getAll, getByFilters, post, put, update, remove, getById } from "@/lib/firestoreCrud";
 import { IMerchant } from "@/Types/merchant";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auth } from "@/lib/firebaseConfig";
@@ -26,14 +26,25 @@ const getMerchants = async () => {
   return res.data as Array<{ id: string } & IMerchant>;
 };
 
+const getMyMerchant = async () => {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [] as Array<{ id: string } & IMerchant>;
+  const res = await getByFilters("merchants", [{ key: "ownerUserId", operator: "==", value: uid }]);
+  if (res.error) throw new Error(res.error);
+  return res.data as Array<{ id: string } & IMerchant>;
+};
+
 const getMerchantById = async (id: string) => {
   const res = await getById("merchants", id);
   if (res.error) throw new Error(res.error);
   return res.data as ({ id: string } & IMerchant) | null;
 };
 
-export const useMerchants = () =>
-  useQuery({ queryKey: ["merchants"], queryFn: getMerchants });
+export const useMerchants = (enabled: boolean = true) =>
+  useQuery({ queryKey: ["merchants"], queryFn: getMerchants, enabled });
+
+export const useMyMerchant = () =>
+  useQuery({ queryKey: ["merchants","mine"], queryFn: getMyMerchant });
 
 export const useAddMerchant = () => {
   const qc = useQueryClient();

@@ -72,7 +72,7 @@ const createProfile = async (
   lastname: string,
   username: string,
   avatar: string,
-  role: string
+  role?: string
 ) => {
   return post("vendors", {
     email,
@@ -81,7 +81,7 @@ const createProfile = async (
     lastname,
     username,
     avatar,
-    role: "vendor",
+    role: role || "user",
     createdAt: new Date().toISOString(),
     isActive: true,
   });
@@ -165,7 +165,7 @@ export const socialLogin = async (accessToken: string) => {
         lastname,
         firstname.toLowerCase() + lastname.toLowerCase(),
         user.photoURL || '',
-        'vendor'
+        'user'
       );
     }
     
