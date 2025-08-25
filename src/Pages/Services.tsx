@@ -13,7 +13,7 @@ const ServicesPage: React.FC = () => {
   const isSuperAdmin = profile?.role === 'super_admin';
   const { data: allServices, isLoading: loadingAll, error: errorAll } = useServices();
   const { data: myServices, isLoading: loadingMine, error: errorMine } = useMyServices();
-  const services = isSuperAdmin ? allServices : myServices;
+  const services: any[] = isSuperAdmin ? (allServices as any[] || []) : (myServices as any[] || []);
   const isLoading = isSuperAdmin ? loadingAll : loadingMine;
   const error = isSuperAdmin ? errorAll : errorMine;
   const { mutate: remove } = useDeleteService();
@@ -47,7 +47,7 @@ const ServicesPage: React.FC = () => {
             {isLoading && <div>Loading...</div>}
             {error && <div>Failed to load services</div>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {services?.map((s: any) => (
+              {(services as any[]).map((s: any) => (
                 <Card key={s.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
