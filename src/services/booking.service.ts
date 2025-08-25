@@ -26,8 +26,8 @@ const getBookingById = async (id: string) => {
   return res.data as ({ id: string } & IBooking) | null;
 };
 
-export const useBookings = () => useQuery({ queryKey: ["bookings"], queryFn: getBookings });
-export const useBookingById = (id: string) => useQuery({ queryKey: ["bookings", id], queryFn: () => getBookingById(id), enabled: !!id });
+export const useBookings = (options?: any) => useQuery({ queryKey: ["bookings"], queryFn: getBookings, ...(options || {}) });
+export const useBookingById = (id: string, options?: any) => useQuery({ queryKey: ["bookings", id], queryFn: () => getBookingById(id), enabled: !!id, ...(options || {}) });
 
 export const useAddBooking = () => {
   const qc = useQueryClient();

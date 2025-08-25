@@ -14,7 +14,7 @@ const MerchantsPage: React.FC = () => {
   const isSuperAdmin = profile?.role === 'super_admin';
   const { data: merchantsAll, isLoading: loadingAll, error: errorAll } = useMerchants(!!isSuperAdmin);
   const { data: merchantsMine, isLoading: loadingMine, error: errorMine } = useMyMerchant();
-  const merchants = isSuperAdmin ? merchantsAll : merchantsMine;
+  const merchants: any[] = (isSuperAdmin ? (merchantsAll as any[] || []) : (merchantsMine as any[] || []));
   const isLoading = isSuperAdmin ? loadingAll : loadingMine;
   const error = isSuperAdmin ? errorAll : errorMine;
   const { mutate: remove } = useDeleteMerchant();
@@ -28,17 +28,17 @@ const MerchantsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <TabsList>
               <TabsTrigger value="list">Merchants</TabsTrigger>
-              {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : (
+              {(!isSuperAdmin && ((merchants as any[]).length || 0) > 0) ? null : (
                 <TabsTrigger value="create">Create</TabsTrigger>
               )}
             </TabsList>
-            {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : <MerchantForm />}
+            {(!isSuperAdmin && ((merchants as any[]).length || 0) > 0) ? null : <MerchantForm />}
           </div>
           <TabsContent value="list">
             {isLoading && <div>Loading...</div>}
             {error && <div>Failed to load merchants</div>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {merchants?.map((m: any) => (
+              {(merchants as any[]).map((m: any) => (
                 <Card key={m.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ const MerchantsPage: React.FC = () => {
               ))}
             </div>
           </TabsContent>
-          {(!isSuperAdmin && (merchants?.length || 0) > 0) ? null : (
+          {(!isSuperAdmin && ((merchants as any[]).length || 0) > 0) ? null : (
             <TabsContent value="create">
               <Card>
                 <CardHeader>

@@ -33,10 +33,10 @@ const getServiceById = async (id: string) => {
   return res.data as ({ id: string } & IService) | null;
 };
 
-export const useServices = () => useQuery({ queryKey: ["services"], queryFn: getServices });
-export const useServicesByMerchant = (merchantId: string) =>
-  useQuery({ queryKey: ["services", merchantId], queryFn: () => getServicesByMerchant(merchantId), enabled: !!merchantId });
-export const useServiceById = (id: string) => useQuery({ queryKey: ["services", id], queryFn: () => getServiceById(id), enabled: !!id });
+export const useServices = (options?: any) => useQuery({ queryKey: ["services"], queryFn: getServices, ...(options || {}) });
+export const useServicesByMerchant = (merchantId: string, options?: any) =>
+  useQuery({ queryKey: ["services", merchantId], queryFn: () => getServicesByMerchant(merchantId), enabled: !!merchantId, ...(options || {}) });
+export const useServiceById = (id: string, options?: any) => useQuery({ queryKey: ["services", id], queryFn: () => getServiceById(id), enabled: !!id, ...(options || {}) });
 
 const getMyServices = async () => {
   const uid = auth.currentUser?.uid;
@@ -44,7 +44,7 @@ const getMyServices = async () => {
   return getServicesByMerchant(uid);
 };
 
-export const useMyServices = () => useQuery({ queryKey: ["services","mine"], queryFn: getMyServices });
+export const useMyServices = (options?: any) => useQuery({ queryKey: ["services","mine"], queryFn: getMyServices, ...(options || {}) });
 
 export const useAddService = () => {
   const qc = useQueryClient();

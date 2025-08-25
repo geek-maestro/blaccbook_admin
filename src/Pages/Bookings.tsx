@@ -27,7 +27,7 @@ const BookingsPage: React.FC = () => {
             {isLoading && <div>Loading...</div>}
             {error && <div>Failed to load bookings</div>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {bookings?.map((b: any) => (
+              {(bookings as any[] | undefined)?.map((b: any) => (
                 <Card key={b.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">

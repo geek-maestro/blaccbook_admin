@@ -40,11 +40,11 @@ const getMerchantById = async (id: string) => {
   return res.data as ({ id: string } & IMerchant) | null;
 };
 
-export const useMerchants = (enabled: boolean = true) =>
-  useQuery({ queryKey: ["merchants"], queryFn: getMerchants, enabled });
+export const useMerchants = (enabled: boolean = true, options?: any) =>
+  useQuery({ queryKey: ["merchants"], queryFn: getMerchants, enabled, ...(options || {}) });
 
-export const useMyMerchant = () =>
-  useQuery({ queryKey: ["merchants","mine"], queryFn: getMyMerchant });
+export const useMyMerchant = (options?: any) =>
+  useQuery({ queryKey: ["merchants","mine"], queryFn: getMyMerchant, ...(options || {}) });
 
 export const useAddMerchant = () => {
   const qc = useQueryClient();
