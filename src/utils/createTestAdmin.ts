@@ -20,10 +20,21 @@ export const createTestAdmin = async () => {
     const userData = {
       email: "admin@blaccbook.com",
       userId: userId,
-      name: "Admin User",
-      userType: "admin", // This will give admin access
+      firstname: "Admin",
+      lastname: "User",
+      username: "admin",
+      role: "admin", // This will give admin access
+      status: "active",
+      verifications: {
+        email: true,
+        phone: false,
+        identity: false,
+        business: false,
+        documents: false
+      },
       createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
+      isActive: true,
+      avatarUrl: "",
       phone: "",
     };
     
@@ -55,10 +66,21 @@ export const createTestSuperAdmin = async () => {
     const userData = {
       email: "superadmin@blaccbook.com",
       userId: userId,
-      name: "Super Admin User",
-      userType: "super_admin", // This will give super admin access
+      firstname: "Super",
+      lastname: "Admin",
+      username: "superadmin",
+      role: "super_admin", // This will give super admin access
+      status: "active",
+      verifications: {
+        email: true,
+        phone: false,
+        identity: false,
+        business: false,
+        documents: false
+      },
       createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
+      isActive: true,
+      avatarUrl: "",
       phone: "",
     };
     

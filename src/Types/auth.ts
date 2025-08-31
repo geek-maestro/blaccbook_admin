@@ -13,18 +13,18 @@ export type VerificationStatus = {
 export type IUser = {
   id: string;
   email: string;
-  avatarUrl: string;
-  firstname: string;
-  lastname: string;
+  avatarUrl?: string;
+  firstname?: string;
+  lastname?: string;
   userId: string;
-  role: UserRole;
-  username: string;
+  role?: UserRole;
+  username?: string;
   phone?: string;
-  status: UserStatus;
-  verifications: VerificationStatus;
+  status?: UserStatus;
+  verifications?: VerificationStatus;
   createdAt: string;
   updatedAt?: string;
-  isActive: boolean;
+  isActive?: boolean;
   lastLoginAt?: string;
   deviceTokens?: string[];
   preferences?: {
@@ -35,6 +35,10 @@ export type IUser = {
   linkedBusinessIds?: string[]; // For business owners who own multiple businesses
   assignedAdminId?: string; // For support staff assignment
   permissions?: string[]; // Granular permissions
+  // Legacy fields for backward compatibility
+  name?: string;
+  userType?: string;
+  lastLogin?: string;
 };
 
 export type AdminPermissions = {

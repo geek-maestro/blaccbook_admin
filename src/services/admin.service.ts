@@ -100,7 +100,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, AdminPermissions> = {
     canManageSettings: false,
     canHandleDisputes: false,
     canManagePayments: false,
-  },
+  }
 };
 
 // Dashboard Analytics
