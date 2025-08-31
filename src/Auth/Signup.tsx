@@ -5,7 +5,7 @@ import { auth } from "@/lib/firebaseConfig";
 
 import images from "../assets/comp2.jpg";
 
-import { Mail, Lock, User, Eye, EyeOff, Building2, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Building2, CheckCircle, AlertCircle, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,7 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "vendor",
+    userType: "customer", // Default to customer
     avatar: ""
   });
 
@@ -94,7 +94,14 @@ const Signup = () => {
     const { confirmPassword, ...signupData } = form;
     
     signUp(signupData, {
-      onSuccess: () => navigate("/home"),
+      onSuccess: () => {
+        // Redirect based on user type
+        if (form.userType === "business_owner") {
+          navigate("/business-onboarding");
+        } else {
+          navigate("/home");
+        }
+      },
       onError: (error) => {
         console.error("Signup error:", error);
       }
@@ -177,6 +184,58 @@ const Signup = () => {
                 <p className="text-gray-600">
                   Join BlaccBook and start your journey
                 </p>
+                
+                {/* User Type Selection */}
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">I want to join as:</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, userType: "customer" })}
+                        className={`p-4 border-2 rounded-lg text-left transition-all ${
+                          form.userType === "customer" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${
+                            form.userType === "customer" ? "bg-blue-500" : "bg-gray-200"
+                          }`}>
+                            <ShoppingBag className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">Consumer</h4>
+                            <p className="text-sm text-gray-600">Discover and support Black businesses</p>
+                          </div>
+                        </div>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, userType: "business_owner" })}
+                        className={`p-4 border-2 rounded-lg text-left transition-all ${
+                          form.userType === "business_owner" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${
+                            form.userType === "business_owner" ? "bg-blue-500" : "bg-gray-200"
+                          }`}>
+                            <Building2 className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">Business Owner</h4>
+                            <p className="text-sm text-gray-600">List your business and reach customers</p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {(error || socialLoginError) && (

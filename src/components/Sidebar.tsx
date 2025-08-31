@@ -67,6 +67,12 @@ function Sidebar() {
       label: 'Bookings',
       description: 'Calls & bookings'
     },
+    {
+      path: '/orders',
+      icon: FileText,
+      label: 'Orders',
+      description: 'Manage orders'
+    },
     { 
       path: '/investments', 
       icon: DollarSign, 

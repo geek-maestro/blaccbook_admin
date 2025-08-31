@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useCredSignIn, useSocialLogin } from "@/services/auth1.service";
+import { useUserProfile } from "@/services/profile.service";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -33,7 +34,17 @@ function Login() {
     signIn(
       { email, password },
       {
-        onSuccess: () => navigate("/home"),
+        onSuccess: (data) => {
+          // Redirect based on user type
+          const userType = data.userData?.userType || 'customer';
+          if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
+            navigate("/admin");
+          } else if (userType === 'business_owner') {
+            navigate("/home");
+          } else {
+            navigate("/home");
+          }
+        },
         onError: (error) => {
           console.error("Login error:", error);
         }
@@ -49,7 +60,17 @@ function Login() {
         if (credential?.accessToken && result.user) {
           console.log(credential.accessToken, "credential", result.user, "user");
           socialLogin(credential.accessToken, {
-            onSuccess: () => navigate("/home"),
+            onSuccess: (data) => {
+              // Redirect based on user type
+              const userType = data.userData?.userType || 'customer';
+              if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
+                navigate("/admin");
+              } else if (userType === 'business_owner') {
+                navigate("/home");
+              } else {
+                navigate("/home");
+              }
+            },
             onError: (error) => {
               console.error("Social login error:", error);
             }
@@ -225,7 +246,7 @@ function Login() {
                   {socialLoginPending ? "Signing in..." : "Continue with Google"}
                 </Button>
 
-                <div className="text-center pt-6">
+                <div className="text-center pt-6 space-y-2">
                   <p className="text-gray-600">
                     Don't have an account?{" "}
                     <Button
@@ -237,6 +258,40 @@ function Login() {
                       Create Account
                     </Button>
                   </p>
+                  
+                  {/* Admin Access Links for Testing */}
+                  {/* <div className="pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        className="text-xs w-full"
+                        onClick={() => navigate("/admin")}
+                      >
+                        🚀 Access Admin Dashboard
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        className="text-xs w-full"
+                        onClick={async () => {
+                          try {
+                            const { createTestAdmin } = await import("@/utils/createTestAdmin");
+                            await createTestAdmin();
+                            alert("Admin user created! Email: admin@blaccbook.com, Password: admin123");
+                          } catch (error) {
+                            console.error("Error creating admin:", error);
+                            alert("Error creating admin user. Check console for details.");
+                          }
+                        }}
+                      >
+                        👤 Create Test Admin
+                      </Button>
+                    </div>
+                  </div> */}
                 </div>
               </form>
             </div>

@@ -19,6 +19,7 @@ export type IBusiness = {
     bookableDetails?: BookableDetails,
     rating?: number,
     products?: IProduct[],
+    status?: 'pending' | 'approved' | 'rejected' | 'suspended', // Business approval status
 }
 
 export type IContact = {
