@@ -1,28 +1,38 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { update, getById } from "@/lib/firestoreCrud";
+import { update, getByFilters } from "@/lib/firestoreCrud";
 import { IUser } from "@/Types/auth";
 
 // Get current user from localStorage
 const getCurrentUser = (): IUser | null => {
-  const vendorData = localStorage.getItem('vendorData');
-  if (vendorData) {
-    return JSON.parse(vendorData);
+  const userData = localStorage.getItem('userData');
+  if (userData) {
+    return JSON.parse(userData);
   }
   return null;
 };
 
 // Update user profile in Firestore
 const updateUserProfile = async (userId: string, profileData: Partial<IUser>) => {
-  const result = await update("vendors", userId, profileData);
+  // First, find the user document by userId field
+  const findResult = await getByFilters("users", [
+    { key: "userId", operator: "==", value: userId }
+  ]);
+  
+  if (findResult.data.length === 0) {
+    throw new Error("User not found");
+  }
+  
+  const userDoc = findResult.data[0];
+  const result = await update("users", userDoc.id, profileData);
   
   if (result.success) {
     // Update localStorage with new data
     const currentUser = getCurrentUser();
     if (currentUser) {
       const updatedUser = { ...currentUser, ...profileData };
-      localStorage.setItem('vendorData', JSON.stringify(updatedUser));
+      localStorage.setItem('userData', JSON.stringify(updatedUser));
     }
   }
   
@@ -82,18 +92,21 @@ export const useUserProfile = () => {
   return useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
-      if (!currentUser?.id) {
+      if (!currentUser?.userId) {
         throw new Error("No user ID found");
       }
       
-      const result = await getById("vendors", currentUser.id);
-      if (result.error) {
-        throw new Error(result.error);
+      const result = await getByFilters("users", [
+        { key: "userId", operator: "==", value: currentUser.userId }
+      ]);
+      
+      if (result.data.length === 0) {
+        throw new Error("User profile not found");
       }
       
-      return result.data as IUser;
+      return result.data[0] as IUser;
     },
-    enabled: !!currentUser?.id,
+    enabled: !!currentUser?.userId,
   });
 };
 

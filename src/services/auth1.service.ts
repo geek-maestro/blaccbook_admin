@@ -9,32 +9,32 @@ import {
 import { auth } from "@/lib/firebaseConfig";
 import { post, getByFilters } from "@/lib/firestoreCrud";
 
-// First, add a function to fetch vendor data
-const fetchVendorData = async (userId: string) => {
-  const result = await getByFilters("vendors", [
+// First, add a function to fetch user data
+const fetchUserData = async (userId: string) => {
+  const result = await getByFilters("users", [
     { key: "userId", operator: "==", value: userId }
   ]);
   if (result.data.length === 0) {
-    throw new Error("Vendor profile not found");
+    throw new Error("User profile not found");
   }
   return result.data[0];
 };
 
-// Function to save vendor data to localStorage
-const saveVendorToStorage = (vendorData: any) => {
-  localStorage.setItem('vendorData', JSON.stringify(vendorData));
+// Function to save user data to localStorage
+const saveUserToStorage = (userData: any) => {
+  localStorage.setItem('userData', JSON.stringify(userData));
 };
 
 // Function to sign in with credentials
 const credSignIn = async (email: string, password: string) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
   try {
-    const vendorData = await fetchVendorData(userCred.user.uid);
-    saveVendorToStorage(vendorData);
-    return { user: userCred.user, vendorData };
+    const userData = await fetchUserData(userCred.user.uid);
+    saveUserToStorage(userData);
+    return { user: userCred.user, userData };
   } catch (err) {
-    console.warn("Vendor profile not found for user:", userCred.user.uid);
-    return { user: userCred.user, vendorData: null } as const;
+    console.warn("User profile not found for user:", userCred.user.uid);
+    return { user: userCred.user, userData: null } as const;
   }
 };
 
@@ -47,11 +47,11 @@ export const useCredSignIn = () => {
       credSignIn(email, password),
     onSuccess: (data) => {
       console.log("Signed in:", { uid: data.user?.uid, email: data.user?.email });
-      if (data.vendorData) {
-        console.log("Vendor data:", data.vendorData);
+      if (data.userData) {
+        console.log("User data:", data.userData);
       } else {
         console.warn(
-          "Vendor data not found. Ensure a document exists in 'vendors' with userId = UID."
+          "User data not found. Ensure a document exists in 'users' with userId = UID."
         );
       }
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
@@ -72,18 +72,16 @@ const createProfile = async (
   lastname: string,
   username: string,
   avatar: string,
-  role?: string
+  userType?: string
 ) => {
-  return post("vendors", {
+  return post("users", {
     email,
     userId,
-    firstname,
-    lastname,
-    username,
-    avatar,
-    role: role || "user",
+    name: `${firstname} ${lastname}`,
+    userType: userType || "customer",
     createdAt: new Date().toISOString(),
-    isActive: true,
+    lastLogin: new Date().toISOString(),
+    phone: "",
   });
 };
 
@@ -93,14 +91,14 @@ const signUpWithEmail = async (
   password: string,
   firstname: string,
   lastname: string,
-  role: string,
+  userType: string,
   avatar: string,
   username: string
 ) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const userId = userCredential.user.uid;
 
-  await createProfile(email, userId, firstname, lastname, username, avatar, role);
+  await createProfile(email, userId, firstname, lastname, username, avatar, userType);
   
   return userId;
 };
@@ -111,16 +109,16 @@ export const useSignUp = () => {
 
   return useMutation({
     mutationFn: ({
-      email, password, firstname, lastname, role, avatar, username,
+      email, password, firstname, lastname, userType, avatar, username,
     }: {
       email: string;
       password: string;
       firstname: string;
       lastname: string;
-      role: string;
+      userType: string;
       avatar: string;
       username: string;
-    }) => signUpWithEmail(email, password, firstname, lastname, role, avatar, username),
+    }) => signUpWithEmail(email, password, firstname, lastname, userType, avatar, username),
     
     onSuccess: (userId) => {
       console.log("User registered:", userId);
@@ -135,9 +133,9 @@ export const useSignUp = () => {
   });
 };
 
-// Function to check if vendor exists
-const checkVendorExists = async (userId: string) => {
-  const result = await getByFilters("vendors", [
+// Function to check if user exists
+const checkUserExists = async (userId: string) => {
+  const result = await getByFilters("users", [
     { key: "userId", operator: "==", value: userId }
   ]);
   return result.data.length > 0;
@@ -150,10 +148,10 @@ export const socialLogin = async (accessToken: string) => {
     const userCredential = await signInWithCredential(auth, credential);
     const user = userCredential.user;
     
-    // Check if user exists in vendors collection
-    const vendorExists = await checkVendorExists(user.uid);
+    // Check if user exists in users collection
+    const userExists = await checkUserExists(user.uid);
     
-    if (!vendorExists) {
+    if (!userExists) {
       const nameParts = user.displayName?.split(' ') || ['', ''];
       const firstname = nameParts[0];
       const lastname = nameParts[nameParts.length - 1];
@@ -165,15 +163,15 @@ export const socialLogin = async (accessToken: string) => {
         lastname,
         firstname.toLowerCase() + lastname.toLowerCase(),
         user.photoURL || '',
-        'user'
+        'customer'
       );
     }
     
-    // Fetch and save vendor data
-    const vendorData = await fetchVendorData(user.uid);
-    saveVendorToStorage(vendorData);
+    // Fetch and save user data
+    const userData = await fetchUserData(user.uid);
+    saveUserToStorage(userData);
     
-    return { user, vendorData };
+    return { user, userData };
   } catch (error) {
     console.error("Social login error:", error);
     throw error;
@@ -188,7 +186,7 @@ export const useSocialLogin = () => {
     mutationFn: (accessToken: string) => socialLogin(accessToken),
     onSuccess: (data) => {
       console.log("Google Sign-In Success:", data.user);
-      console.log("Vendor data:", data.vendorData);
+      console.log("User data:", data.userData);
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
     onError: (error) => {
@@ -203,7 +201,7 @@ export const useSocialLogin = () => {
 export const logout = async () => {
   try {
     await signOut(auth);
-    localStorage.removeItem('vendorData'); // Remove vendor data specifically
+    localStorage.removeItem('userData'); // Remove user data specifically
     sessionStorage.clear();
   } catch (error) {
     console.error("Logout error:", error);

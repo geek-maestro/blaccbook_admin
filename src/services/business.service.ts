@@ -38,6 +38,9 @@ const addBusiness = async ({
     rating,
     featuredImage,
     ownerUserId,
+    status: 'pending', // New businesses start as pending approval
+    createdAt: new Date().toISOString(),
+    isBanned: false,
   });
 };
 
@@ -188,6 +191,21 @@ export const useMyBusinesses = () => {
   return useQuery({
     queryKey: ["business","mine"],
     queryFn: getMyBusinesses,
+  });
+};
+
+// Hook for public business listings - only shows approved businesses
+export const useApprovedBusinesses = () => {
+  return useQuery({
+    queryKey: ["business", "approved"],
+    queryFn: async () => {
+      const result = await getByFilters("business", []);
+      if (result.error) throw new Error(result.error);
+      // Filter to only show approved businesses
+      return (result.data as IBusiness[]).filter(business => 
+        business.status === 'approved' && !business.isBanned
+      );
+    },
   });
 };
  

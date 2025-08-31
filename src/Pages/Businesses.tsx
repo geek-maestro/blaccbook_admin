@@ -13,10 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Star, MapPin, Phone, Globe, Calendar } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Sidebar from '@/components/Sidebar';
-import { IBusiness } from '@/Data/business';
+import { IBusiness } from '@/Types/business';
 import { mockBusinesses } from '@/Data/business';
 import AddBusinessForm from '@/components/AddBusinessForm';
-import { useBusinesses } from '@/services/business.service';
+import { useApprovedBusinesses } from '@/services/business.service';
 
 const BusinessCard = ({ business }: { business: IBusiness }) => {
   
@@ -93,7 +93,7 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
               )}
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
-                <span className="break-words">{formatDate(business.createdAt)}</span>
+                <span className="break-words">{formatDate(business.createdAt || '')}</span>
               </div>
             </div>
           </div>
@@ -130,9 +130,8 @@ const BusinessCard = ({ business }: { business: IBusiness }) => {
 
 const BusinessList = () => {
 
-  const { data:businesses, isLoading, error: fetchError } = useBusinesses();
+  const { data: businesses, isLoading, error: fetchError } = useApprovedBusinesses();
   console.log(businesses, "data", fetchError, "Error fetching");
-  // const businesses = data?.data || [];
 
   
   if (isLoading) {
