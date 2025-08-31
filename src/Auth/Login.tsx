@@ -260,7 +260,7 @@ function Login() {
                   </p>
                   
                   {/* Admin Access Links for Testing */}
-                  {/* <div className="pt-4 border-t border-gray-200">
+                  <div className="pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
                     <div className="space-y-2">
                       <Button
@@ -291,7 +291,7 @@ function Login() {
                         👤 Create Test Admin
                       </Button>
                     </div>
-                  </div> */}
+                  </div>
                 </div>
               </form>
             </div>

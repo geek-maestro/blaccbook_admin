@@ -31,7 +31,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = profile.role as UserRole;
+  const userRole = (profile.role || profile.userType) as UserRole;
   
 
 

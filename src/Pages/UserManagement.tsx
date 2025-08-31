@@ -60,7 +60,7 @@ const UserManagement = () => {
       (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = roleFilter === 'all' || (user.role || user.userType) === roleFilter;
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
 
     return matchesSearch && matchesRole && matchesStatus;
@@ -69,9 +69,9 @@ const UserManagement = () => {
   // Group users by role for tabs
   const usersByRole = {
     all: filteredUsers,
-    consumers: filteredUsers.filter(u => u.role === 'consumer'),
-    business_owners: filteredUsers.filter(u => u.role === 'business_owner'),
-    admins: filteredUsers.filter(u => ['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(u.role))
+    consumers: filteredUsers.filter(u => (u.role || u.userType) === 'consumer'),
+    business_owners: filteredUsers.filter(u => (u.role || u.userType) === 'business_owner'),
+    admins: filteredUsers.filter(u => ['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(u.role || u.userType || ''))
   };
 
   const currentUsers = usersByRole[selectedTab as keyof typeof usersByRole] || [];
@@ -118,7 +118,7 @@ const UserManagement = () => {
 
   const handleAssignRole = (user: any) => {
     setSelectedUser(user);
-    setNewRole(user.role as UserRole);
+    setNewRole((user.role || user.userType) as UserRole);
     setIsRoleDialogOpen(true);
   };
 
@@ -130,6 +130,7 @@ const UserManagement = () => {
         userId: selectedUser.userId,
         updates: {
           role: newRole,
+          userType: newRole, // Also update userType for backward compatibility
           updatedAt: new Date().toISOString()
         }
       });
@@ -339,7 +340,7 @@ const UserManagement = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {currentUsers.map((user) => {
-                      const RoleIcon = getRoleIcon(user.role as UserRole);
+                      const RoleIcon = getRoleIcon((user.role || user.userType) as UserRole);
                       return (
                         <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                           <div className="flex items-center space-x-4">
@@ -366,8 +367,8 @@ const UserManagement = () => {
                                 <h3 className="font-medium">
                                   {`${user.firstname || ''} ${user.lastname || ''}`.trim() || 'Unknown User'} 
                                 </h3>
-                                <Badge variant={getRoleBadgeVariant(user.role as UserRole)}>
-                                  {user.role.replace('_', ' ')}
+                                <Badge variant={getRoleBadgeVariant((user.role || user.userType) as UserRole)}>
+                                  {(user.role || user.userType || 'unknown').replace('_', ' ')}
                                 </Badge>
                                 <Badge variant={getStatusBadgeVariant((user.status || 'active') as UserStatus)}>
                                   {(user.status || 'active').replace('_', ' ')}
@@ -494,8 +495,8 @@ const UserManagement = () => {
               
               <div>
                 <Label className="text-sm font-medium">Current Role</Label>
-                <Badge variant={getRoleBadgeVariant(selectedUser.role as UserRole)}>
-                  {selectedUser.role.replace('_', ' ')}
+                <Badge variant={getRoleBadgeVariant((selectedUser.role || selectedUser.userType) as UserRole)}>
+                  {(selectedUser.role || selectedUser.userType || 'unknown').replace('_', ' ')}
                 </Badge>
               </div>
 

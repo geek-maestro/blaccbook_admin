@@ -40,8 +40,12 @@ function AdminSidebar() {
   const { mutate: signOut, isPending } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
 
-  const userRole = profile?.role as UserRole || 'consumer';
+  const userRole = (profile?.role || profile?.userType) as UserRole || 'consumer';
   
+  // Debug logging
+  console.log('AdminSidebar - Profile:', profile);
+  console.log('AdminSidebar - User Role:', userRole);
+  console.log('AdminSidebar - Available permissions:', hasPermission(userRole, 'canManageUsers'));
 
 
   const handleLogout = () => {
@@ -157,6 +161,12 @@ function AdminSidebar() {
     hasPermission(userRole, item.permission as any)
   );
   
+  // Fallback: if no items are filtered and user is admin, show all items
+  const displayItems = filteredAdminItems.length > 0 ? filteredAdminItems : 
+    (userRole === 'admin' || userRole === 'super_admin' ? adminNavItems : []);
+  
+  console.log('AdminSidebar - Filtered Items:', filteredAdminItems);
+  console.log('AdminSidebar - Display Items:', displayItems);
 
 
   const SidebarContent = () => (
@@ -190,13 +200,16 @@ function AdminSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
-              {profile?.firstname} {profile?.lastname}
+              {profile?.firstname && profile?.lastname 
+                ? `${profile.firstname} ${profile.lastname}`
+                : profile?.name || 'Admin User'
+              }
             </p>
             <p className="text-xs text-blue-200 truncate">
               {profile?.email}
             </p>
             <Badge variant="secondary" className="text-xs mt-1 bg-blue-500/20 text-blue-200 border-blue-400/30">
-              {profile?.role?.replace('_', ' ').toUpperCase()}
+              {(profile?.role || profile?.userType)?.replace('_', ' ').toUpperCase()}
             </Badge>
           </div>
         </div>
@@ -205,7 +218,7 @@ function AdminSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6">
         <ul className="space-y-1 px-3">
-          {filteredAdminItems.map((item) => {
+          {displayItems.map((item) => {
             const Icon = item.icon;
             return (
               <li key={item.path}>
@@ -264,6 +277,12 @@ function AdminSidebar() {
             Last updated: {new Date().toLocaleTimeString()}
           </div>
         </div>
+      </div>
+
+      {/* Debug Info */}
+      <div className="px-6 py-2 text-xs text-blue-200/60">
+        <p>Role: {userRole}</p>
+        <p>Items: {displayItems.length}</p>
       </div>
 
       {/* Sign Out Button */}
