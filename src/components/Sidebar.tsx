@@ -43,18 +43,18 @@ function Sidebar() {
       label: 'Dashboard',
       description: 'Overview & Analytics'
     },
-    { 
-      path: '/business', 
-      icon: Building2, 
-      label: 'Businesses',
-      description: 'Businesses Onboard'
-    },
-    {
-      path: '/merchants',
-      icon: Store,
-      label: 'Merchants',
-      description: 'Manage merchants'
-    },
+    // { 
+    //   path: '/business', 
+    //   icon: Building2, 
+    //   label: 'Businesses',
+    //   description: 'Businesses Onboard'
+    // },
+    // {
+    //   path: '/merchants',
+    //   icon: Store,
+    //   label: 'Merchants',
+    //   description: 'Manage merchants'
+    // },
     {
       path: '/services',
       icon: Wrench,
