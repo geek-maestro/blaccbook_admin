@@ -135,4 +135,34 @@ const remove = async (collectionPath: string, docId: string) => {
     }
 }
 
-export { post, getByFilters, getAll, put, update, getById, remove };
+/**
+ * Update the status field for a specific booking document.
+ * 
+ * @param collectionPath - The Firestore collection name (e.g., "bookings")
+ * @param docId - The document ID of the booking
+ * @param newStatus - The new status value (e.g., "pending", "confirmed", "cancelled")
+ */
+const updateBookingStatus = async (
+    collectionPath: string,
+    docId: string,
+    newStatus: string
+  ) => {
+    const result = { success: false, error: "" };
+  
+    if (!docId) {
+      result.error = "Document ID is required.";
+      return result;
+    }
+  
+    try {
+      await updateDoc(doc(db, collectionPath, docId), { status: newStatus });
+      result.success = true;
+      return result;
+    } catch (err) {
+      result.error = err instanceof Error ? err.message : "Unknown error occurred";
+      return result;
+    }
+  };
+  
+
+export { post, getByFilters, getAll, put, update, getById, remove, updateBookingStatus };
