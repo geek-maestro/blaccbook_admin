@@ -5,7 +5,7 @@ import { auth } from "@/lib/firebaseConfig";
 
 import images from "../assets/comp2.jpg";
 
-import { Mail, Lock, User, Eye, EyeOff, Building2, CheckCircle, AlertCircle, ShoppingBag } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Building2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,7 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "customer", // Default to customer
+    userType: "business_owner",
     avatar: ""
   });
 
@@ -83,7 +83,7 @@ const Signup = () => {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate password match
     if (form.password !== form.confirmPassword) {
       setPasswordMatch(false);
@@ -92,15 +92,12 @@ const Signup = () => {
 
     // Remove confirmPassword from form data before submission
     const { confirmPassword, ...signupData } = form;
-    
+
     signUp(signupData, {
       onSuccess: () => {
-        // Redirect based on user type
-        if (form.userType === "business_owner") {
-          navigate("/business-onboarding");
-        } else {
-          navigate("/home");
-        }
+        // Redirect onboarding
+        navigate("/business-onboarding");
+
       },
       onError: (error) => {
         console.error("Signup error:", error);
@@ -116,7 +113,10 @@ const Signup = () => {
         const credential = GoogleAuthProvider.credentialFromResult(result);
         if (credential?.accessToken && result.user) {
           socialLogin(credential.accessToken, {
-            onSuccess: () => navigate("/home"),
+            onSuccess: (data) => {
+              console.log("New Token Generated:", data.token);
+              navigate("/business-onboarding");
+            },
             onError: (error) => {
               console.error("Social login error:", error);
             }
@@ -135,7 +135,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+    <div className="flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-1">
       <div className="w-full max-w-6xl">
         <Card className="grid grid-cols-1 lg:grid-cols-2 shadow-2xl border-0 overflow-hidden bg-white/95 backdrop-blur-sm">
           {/* Left side with image */}
@@ -148,8 +148,8 @@ const Signup = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-indigo-900/95 flex flex-col items-center justify-center p-12">
                 <div className="text-center space-y-6">
-                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <Building2 className="w-10 h-10 text-white" />
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shadow-xl overflow-hidden border-2 border-white/30">
+                    <img src="/logo.jpeg" alt="BlaccBook Logo" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-4">
                     <h1 className="text-5xl font-bold text-white leading-tight">
@@ -175,7 +175,7 @@ const Signup = () => {
           </div>
 
           {/* Right side with form */}
-          <div className="flex items-center justify-center p-8 lg:p-16">
+          <div className="flex items-center justify-center p-8 lg:p-1">
             <div className="w-full max-w-md space-y-8">
               <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold text-gray-900">
@@ -184,58 +184,6 @@ const Signup = () => {
                 <p className="text-gray-600">
                   Join BlaccBook and start your journey
                 </p>
-                
-                {/* User Type Selection */}
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">I want to join as:</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, userType: "customer" })}
-                        className={`p-4 border-2 rounded-lg text-left transition-all ${
-                          form.userType === "customer" 
-                            ? "border-blue-500 bg-blue-50" 
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-full ${
-                            form.userType === "customer" ? "bg-blue-500" : "bg-gray-200"
-                          }`}>
-                            <ShoppingBag className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">Consumer</h4>
-                            <p className="text-sm text-gray-600">Discover and support Black businesses</p>
-                          </div>
-                        </div>
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, userType: "business_owner" })}
-                        className={`p-4 border-2 rounded-lg text-left transition-all ${
-                          form.userType === "business_owner" 
-                            ? "border-blue-500 bg-blue-50" 
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-full ${
-                            form.userType === "business_owner" ? "bg-blue-500" : "bg-gray-200"
-                          }`}>
-                            <Building2 className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">Business Owner</h4>
-                            <p className="text-sm text-gray-600">List your business and reach customers</p>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {(error || socialLoginError) && (
@@ -374,15 +322,14 @@ const Signup = () => {
                           {[1, 2, 3, 4, 5].map((level) => (
                             <div
                               key={level}
-                              className={`h-1 w-8 rounded-full ${
-                                level <= passwordStrength.score
-                                  ? passwordStrength.score < 2
-                                    ? "bg-red-500"
-                                    : passwordStrength.score < 4
+                              className={`h-1 w-8 rounded-full ${level <= passwordStrength.score
+                                ? passwordStrength.score < 2
+                                  ? "bg-red-500"
+                                  : passwordStrength.score < 4
                                     ? "bg-yellow-500"
                                     : "bg-green-500"
-                                  : "bg-gray-200"
-                              }`}
+                                : "bg-gray-200"
+                                }`}
                             />
                           ))}
                         </div>
@@ -399,9 +346,8 @@ const Signup = () => {
                       <Input
                         id="confirmPassword"
                         name="confirmPassword"
-                        className={`pl-10 pr-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors ${
-                          form.confirmPassword && !passwordMatch ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`pl-10 pr-10 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-colors ${form.confirmPassword && !passwordMatch ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         type={showConfirmPassword ? "text" : "password"}
                         value={form.confirmPassword}
                         onChange={handleChange}
@@ -488,7 +434,7 @@ const Signup = () => {
                   {socialLoginPending ? "Creating account..." : "Continue with Google"}
                 </Button>
 
-                <div className="text-center pt-6">
+                <div className="text-center">
                   <p className="text-gray-600">
                     Already have an account?{" "}
                     <Button

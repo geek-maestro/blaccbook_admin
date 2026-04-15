@@ -1,4 +1,22 @@
-export type BookingStatus = "pending" | "confirmed" | "cancelled";
+export type BookingStatus = "pending" | "confirmed" | "cancelled" | "accepted" | "rejected";
+
+export interface IApiBooking {
+  id: string;
+  customerUid: string;
+  businessId: string;
+  merchantUid: string;
+  serviceId: string;
+  serviceName: string;
+  businessName: string;
+  businessAddress: string;
+  bookingDate: string;
+  bookingTime: string;
+  quantity: number;
+  notes: string;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type IBooking = {
   id?: string;

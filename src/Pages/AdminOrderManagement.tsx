@@ -41,7 +41,6 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 import { 
   useOrders, 
@@ -249,39 +248,33 @@ const AdminOrderManagement = () => {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <RoleBasedRoute requiredPermission="canManageOrders">
-        <div className="flex h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1 overflow-y-auto flex items-center justify-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          </div>
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </RoleBasedRoute>
+      </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <RoleBasedRoute requiredPermission="canManageOrders">
-        <div className="flex h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1 overflow-y-auto flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Orders</h2>
-              <p className="text-gray-600">Please try refreshing the page</p>
-            </div>
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Orders</h2>
+            <p className="text-gray-600">Please try refreshing the page</p>
           </div>
         </div>
-      </RoleBasedRoute>
+      </div>
     );
   }
 
   return (
-    <RoleBasedRoute requiredPermission="canManageOrders">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -792,7 +785,7 @@ const AdminOrderManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </RoleBasedRoute>
+    </>
   );
 };
 

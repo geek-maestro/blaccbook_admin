@@ -27,8 +27,10 @@ export type IService = {
   title: string;
   description?: string;
   price: number;
+  hourlyPrice?: number;
   availability?: IWeeklyAvailability;
   location?: IGeoPoint;
+  locationAddress?: string;
   createdAt: string;
   updatedAt?: string;
   isProduct?: boolean;

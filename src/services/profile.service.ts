@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updateProfile } from "firebase/auth";
+import { updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
 import { update, getByFilters } from "@/lib/firestoreCrud";
 import { IUser } from "@/Types/auth";
@@ -19,14 +19,14 @@ const updateUserProfile = async (userId: string, profileData: Partial<IUser>) =>
   const findResult = await getByFilters("users", [
     { key: "userId", operator: "==", value: userId }
   ]);
-  
+
   if (findResult.data.length === 0) {
     throw new Error("User not found");
   }
-  
+
   const userDoc = findResult.data[0];
   const result = await update("users", userDoc.id, profileData);
-  
+
   if (result.success) {
     // Update localStorage with new data
     const currentUser = getCurrentUser();
@@ -35,7 +35,7 @@ const updateUserProfile = async (userId: string, profileData: Partial<IUser>) =>
       localStorage.setItem('userData', JSON.stringify(updatedUser));
     }
   }
-  
+
   return result;
 };
 
@@ -44,7 +44,7 @@ const updateAuthProfile = async (displayName?: string, photoURL?: string) => {
   if (!auth.currentUser) {
     throw new Error("No authenticated user");
   }
-  
+
   await updateProfile(auth.currentUser, {
     displayName,
     photoURL
@@ -56,11 +56,11 @@ export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      userId, 
-      profileData, 
-      displayName, 
-      photoURL 
+    mutationFn: async ({
+      userId,
+      profileData,
+      displayName,
+      photoURL
     }: {
       userId: string;
       profileData: Partial<IUser>;
@@ -71,7 +71,7 @@ export const useUpdateProfile = () => {
         updateUserProfile(userId, profileData),
         updateAuthProfile(displayName, photoURL)
       ]);
-      
+
       return firestoreResult;
     },
     onSuccess: () => {
@@ -88,25 +88,34 @@ export const useUpdateProfile = () => {
 // Custom Hook: Get User Profile
 export const useUserProfile = () => {
   const currentUser = getCurrentUser();
-  
+
   return useQuery({
     queryKey: ["userProfile"],
     queryFn: async () => {
       if (!currentUser?.userId) {
         throw new Error("No user ID found");
       }
-      
+
       const result = await getByFilters("users", [
         { key: "userId", operator: "==", value: currentUser.userId }
       ]);
-      
+
       if (result.data.length === 0) {
         throw new Error("User profile not found");
       }
-      
+
       return result.data[0] as IUser;
     },
     enabled: !!currentUser?.userId,
+  });
+};
+
+// Custom Hook: Send Password Reset Email
+export const useSendPasswordReset = () => {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      await sendPasswordResetEmail(auth, email);
+    }
   });
 };
 
@@ -116,7 +125,7 @@ export const uploadProfileImage = async (file: File): Promise<string> => {
   // 1. Upload to Firebase Storage
   // 2. Get the download URL
   // 3. Return the URL
-  
+
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {

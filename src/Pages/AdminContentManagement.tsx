@@ -55,7 +55,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminContentManagement = () => {
@@ -230,7 +229,7 @@ const AdminContentManagement = () => {
   };
 
   return (
-    <RoleBasedRoute requiredPermission="canManageContent">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -797,7 +796,7 @@ const AdminContentManagement = () => {
           </div>
         </div>
       </div>
-    </RoleBasedRoute>
+    </>
   );
 };
 

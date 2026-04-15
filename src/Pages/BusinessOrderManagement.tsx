@@ -42,19 +42,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Sidebar from '@/components/Sidebar';
 import { 
-  useOrders, 
-  useOrderStats, 
-  useUpdateOrderStatus, 
-  useAddOrderAction 
+  useApiMerchantOrders, 
+  useUpdateApiOrderStatus
 } from '@/services/order.service';
 import { useUserProfile } from '@/services/profile.service';
 import { useMyBusinesses } from '@/services/business.service';
-import { IOrder, OrderStatus } from '@/Types/order';
+import { IApiOrder, OrderStatus } from '@/Types/order';
 
 const BusinessOrderManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<IApiOrder | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<OrderStatus>('pending');
@@ -68,33 +66,26 @@ const BusinessOrderManagement = () => {
   const businessIds = myBusinesses?.map(business => business.id) || [];
   
   // Fetch orders for this business owner's businesses only
-  const { data: allOrders, isLoading, error } = useOrders();
-  const businessOrders = allOrders?.filter(order => businessIds.includes(order.businessId)) || [];
+  // Fetch orders for this business owner's businesses only
+  const { data: allOrders, isLoading, error } = useApiMerchantOrders();
   
   // Calculate stats for this business owner
   const businessStats = {
-    totalOrders: businessOrders.length,
-    pendingOrders: businessOrders.filter(o => o.status === 'pending').length,
-    confirmedOrders: businessOrders.filter(o => o.status === 'confirmed').length,
-    inProgressOrders: businessOrders.filter(o => o.status === 'in_progress').length,
-    fulfilledOrders: businessOrders.filter(o => o.status === 'fulfilled').length,
-    totalRevenue: businessOrders.reduce((sum, o) => sum + o.businessEarnings, 0),
-    ordersToday: businessOrders.filter(o => o.createdAt.startsWith(new Date().toISOString().split('T')[0])).length,
-    ordersThisWeek: businessOrders.filter(o => {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      return o.createdAt >= weekAgo;
-    }).length,
+    totalOrders: allOrders?.length || 0,
+    pendingOrders: allOrders?.filter(o => o.status === 'pending').length || 0,
+    paidOrders: allOrders?.filter(o => o.status === 'paid').length || 0,
+    totalRevenue: allOrders?.reduce((sum, o) => sum + o.total, 0) || 0,
+    ordersToday: allOrders?.filter(o => o.createdAt.startsWith(new Date().toISOString().split('T')[0])).length || 0,
   };
 
-  const updateOrderStatus = useUpdateOrderStatus();
-  const addOrderAction = useAddOrderAction();
+  const updateOrderStatus = useUpdateApiOrderStatus();
 
   // Filter orders
-  const filteredOrders = businessOrders.filter(order => {
+  const filteredOrders = (allOrders || []).filter(order => {
     const matchesSearch = 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerUid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.businessName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
@@ -165,12 +156,12 @@ const BusinessOrderManagement = () => {
   };
 
   // Action handlers
-  const handleViewOrder = (order: IOrder) => {
+  const handleViewOrder = (order: IApiOrder) => {
     setSelectedOrder(order);
     setIsViewDialogOpen(true);
   };
 
-  const handleUpdateStatus = (order: IOrder) => {
+  const handleUpdateStatus = (order: IApiOrder) => {
     setSelectedOrder(order);
     setNewStatus(order.status);
     setIsStatusDialogOpen(true);
@@ -183,22 +174,6 @@ const BusinessOrderManagement = () => {
       await updateOrderStatus.mutateAsync({
         orderId: selectedOrder.id,
         status: newStatus,
-        reason: statusNotes,
-        adminNotes: `Status updated by business owner: ${statusNotes}`
-      });
-      
-      // Log the action
-      await addOrderAction.mutateAsync({
-        id: '',
-        orderId: selectedOrder.id,
-        action: 'status_change',
-        performedBy: profile?.userId || 'business_owner',
-        performedByType: 'business',
-        previousValue: selectedOrder.status,
-        newValue: newStatus,
-        reason: statusNotes,
-        timestamp: new Date().toISOString(),
-        metadata: { businessNotes: statusNotes }
       });
       
       setIsStatusDialogOpen(false);
@@ -290,13 +265,13 @@ const BusinessOrderManagement = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+                <CardTitle className="text-sm font-medium">Paid Orders</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatCurrency(businessStats.totalRevenue)}</div>
                 <p className="text-xs text-muted-foreground">
-                  From {businessStats.fulfilledOrders} completed orders
+                  From {businessStats.paidOrders} paid orders
                 </p>
               </CardContent>
             </Card>
@@ -372,30 +347,30 @@ const BusinessOrderManagement = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {order.orderNumber}
+                                {order.id.slice(0, 8)}...
                               </div>
                               <div className="text-sm text-gray-500">
-                                {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                                {order.lineItems.length} item{order.lineItems.length !== 1 ? 's' : ''}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {order.customerName}
+                                {order.customerUid.slice(0, 8)}...
                               </div>
                               <div className="text-sm text-gray-500">
-                                {order.customerEmail}
+                                Business: {order.businessName}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {formatCurrency(order.businessEarnings)}
+                                {formatCurrency(order.total)}
                               </div>
                               <div className="text-sm text-gray-500">
-                                Your earnings
+                                Total
                               </div>
                             </div>
                           </td>
@@ -475,8 +450,8 @@ const BusinessOrderManagement = () => {
                   <h3 className="text-lg font-medium mb-3">Order Information</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Order Number:</span>
-                      <span className="text-sm font-medium">{selectedOrder.orderNumber}</span>
+                      <span className="text-sm text-gray-500">Order ID:</span>
+                      <span className="text-sm font-medium">{selectedOrder.id}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-500">Status:</span>
@@ -489,10 +464,6 @@ const BusinessOrderManagement = () => {
                       <span className="text-sm font-medium">{formatCurrency(selectedOrder.total)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Your Earnings:</span>
-                      <span className="text-sm font-medium text-green-600">{formatCurrency(selectedOrder.businessEarnings)}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-sm text-gray-500">Created:</span>
                       <span className="text-sm">{formatDate(selectedOrder.createdAt)}</span>
                     </div>
@@ -503,19 +474,17 @@ const BusinessOrderManagement = () => {
                   <h3 className="text-lg font-medium mb-3">Customer Information</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Name:</span>
-                      <span className="text-sm font-medium">{selectedOrder.customerName}</span>
+                      <span className="text-sm text-gray-500">UID:</span>
+                      <span className="text-sm font-medium">{selectedOrder.customerUid}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Email:</span>
-                      <span className="text-sm">{selectedOrder.customerEmail}</span>
+                      <span className="text-sm text-gray-500">Business:</span>
+                      <span className="text-sm">{selectedOrder.businessName}</span>
                     </div>
-                    {selectedOrder.customerPhone && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Phone:</span>
-                        <span className="text-sm">{selectedOrder.customerPhone}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Address:</span>
+                      <span className="text-sm">{selectedOrder.businessAddress}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -524,18 +493,16 @@ const BusinessOrderManagement = () => {
               <div>
                 <h3 className="text-lg font-medium mb-3">Order Items</h3>
                 <div className="space-y-3">
-                  {selectedOrder.items.map((item, index) => (
+                  {selectedOrder.lineItems.map((item, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-medium">{item.serviceName}</h4>
-                          <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
-                          {item.description && (
-                            <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                          )}
+                          <h4 className="font-medium">{item.name}</h4>
+                          <p className="text-sm text-gray-500">Type: {item.itemType}</p>
+                          <p className="text-sm text-gray-500">Qty: {item.qty}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{formatCurrency(item.totalPrice)}</p>
+                          <p className="font-medium">{formatCurrency(item.qty * item.unitPrice)}</p>
                           <p className="text-sm text-gray-500">
                             {formatCurrency(item.unitPrice)} each
                           </p>
@@ -573,6 +540,8 @@ const BusinessOrderManagement = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="fulfilled">Fulfilled</SelectItem>

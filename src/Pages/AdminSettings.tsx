@@ -76,7 +76,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminSettings = () => {
@@ -185,8 +184,7 @@ const AdminSettings = () => {
   );
 
   return (
-    <RoleBasedRoute requiredPermission="canManageSettings">
-      <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
         <div className="flex-1 overflow-y-auto">
@@ -855,8 +853,7 @@ const AdminSettings = () => {
             </Tabs>
           </div>
         </div>
-      </div>
-    </RoleBasedRoute>
+    </div>
   );
 };
 

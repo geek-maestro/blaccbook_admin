@@ -34,11 +34,11 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { data: user, isLoading: loadingProfile } = useUserProfile();
   const updateProfileMutation = useUpdateProfile();
-  
+
   const [formData, setFormData] = useState<Partial<IUser>>({
     firstname: '',
     lastname: '',
-    username: '',
+    phone: '',
     email: ''
   });
   const [profileImage, setProfileImage] = useState<string>('');
@@ -51,7 +51,7 @@ const SettingsPage = () => {
       setFormData({
         firstname: user.firstname || '',
         lastname: user.lastname || '',
-        username: user.username || '',
+        phone: user.phone || '',
         email: user.email || ''
       });
       setProfileImage(user.avatarUrl || '');
@@ -89,7 +89,7 @@ const SettingsPage = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user?.id) {
+    if (!user?.userId) {
       toast({
         title: "Error",
         description: "User not found. Please log in again.",
@@ -100,7 +100,7 @@ const SettingsPage = () => {
 
     try {
       await updateProfileMutation.mutateAsync({
-        userId: user.id,
+        userId: user.userId,
         profileData: formData,
         displayName: `${formData.firstname} ${formData.lastname}`.trim(),
         photoURL: profileImage
@@ -125,7 +125,7 @@ const SettingsPage = () => {
       setFormData({
         firstname: user.firstname || '',
         lastname: user.lastname || '',
-        username: user.username || '',
+        phone: user.phone || '',
         email: user.email || ''
       });
       setProfileImage(user.avatarUrl || '');
@@ -160,7 +160,7 @@ const SettingsPage = () => {
             </div>
             <div className="flex items-center space-x-3">
               {!isEditing ? (
-                <Button 
+                <Button
                   onClick={() => setIsEditing(true)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -169,14 +169,14 @@ const SettingsPage = () => {
                 </Button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleCancelEdit}
                     disabled={updateProfileMutation.isPending}
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleSaveProfile}
                     disabled={updateProfileMutation.isPending}
                     className="bg-green-600 hover:bg-green-700"
@@ -214,7 +214,7 @@ const SettingsPage = () => {
                           {user?.firstname?.charAt(0) || user?.lastname?.charAt(0) || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      
+
                       {isEditing && (
                         <Button
                           size="sm"
@@ -229,7 +229,7 @@ const SettingsPage = () => {
                           )}
                         </Button>
                       )}
-                      
+
                       <input
                         id="profile-image-input"
                         type="file"
@@ -290,7 +290,7 @@ const SettingsPage = () => {
                       <User className="h-5 w-5 text-gray-500" />
                       <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstname" className="text-sm font-medium text-gray-700">
@@ -329,7 +329,7 @@ const SettingsPage = () => {
                       <Mail className="h-5 w-5 text-gray-500" />
                       <h3 className="text-lg font-medium text-gray-900">Contact Information</h3>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -345,32 +345,58 @@ const SettingsPage = () => {
                           className={!isEditing ? "bg-gray-50" : ""}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="username" className="text-sm font-medium text-gray-700">
-                          Username
-                        </Label>
-                        <Input
-                          id="username"
-                          value={formData.username}
-                          onChange={(e) => handleInputChange('username', e.target.value)}
-                          placeholder="Enter your username"
-                          disabled={!isEditing}
-                          className={!isEditing ? "bg-gray-50" : ""}
-                        />
-                      </div>
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Account Information */}
+                  {/* Security Information */}
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2 mb-4">
                       <Shield className="h-5 w-5 text-gray-500" />
-                      <h3 className="text-lg font-medium text-gray-900">Account Information</h3>
+                      <h3 className="text-lg font-medium text-gray-900">Security</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Password</Label>
+                        <div>
+                          <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => {
+                              if (!user?.email) {
+                                toast({
+                                  title: "Error",
+                                  description: "Oops! We don't have an email for this account.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              if (window.confirm("Send a password reset email to " + user.email + "?")) {
+                                import("firebase/auth").then(({ sendPasswordResetEmail }) => {
+                                  import("@/lib/firebaseConfig").then(({ auth }) => {
+                                    sendPasswordResetEmail(auth, user.email!).then(() => {
+                                      toast({
+                                        title: "Password Reset Sent",
+                                        description: "Check your email for a link to reset your password.",
+                                      });
+                                    }).catch((err) => {
+                                      toast({
+                                        title: "Error",
+                                        description: err.message,
+                                        variant: "destructive"
+                                      });
+                                    });
+                                  });
+                                });
+                              }
+                            }}
+                          >
+                            Change Password
+                          </Button>
+                        </div>
+                      </div>
                       {/* <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">User ID</Label>
                         <Input 
@@ -381,9 +407,9 @@ const SettingsPage = () => {
                       </div> */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">Account Created</Label>
-                        <Input 
-                          value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''} 
-                          disabled 
+                        <Input
+                          value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''}
+                          disabled
                           className="bg-gray-50"
                         />
                       </div>

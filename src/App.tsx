@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Navigate,
 } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BusinessDashboard from "./Pages/Dashboard";
 import BusinessDashboard2 from "./Pages/Dashboard2";
 // Page Imports
@@ -28,21 +30,32 @@ import BusinessOrderManagement from "./Pages/BusinessOrderManagement";
 import AdminMapManagement from "./Pages/AdminMapManagement";
 import AdminCommunication from "./Pages/AdminCommunication";
 import AdminContentManagement from "./Pages/AdminContentManagement";
+import AdminCategories from "./Pages/AdminCategories";
 import AdminAnalytics from "./Pages/AdminAnalytics";
 import AdminSecurity from "./Pages/AdminSecurity";
 import AdminSettings from "./Pages/AdminSettings";
 
-// Business Onboarding
 import BusinessOnboarding from "./Pages/BusinessOnboarding";
+import MerchantVerifiedBusinesses from "./Pages/MerchantVerifiedBusinesses";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import SplashScreen from "./components/SplashScreen";
 
 const client = new QueryClient();
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2800); // Wait slightly longer than the fade animation in SplashScreen
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Router>
       <QueryClientProvider client={client}>
         <div className="App">
+          {showSplash && <SplashScreen />}
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Navigate to="/login" />} />
@@ -64,6 +77,7 @@ function App() {
 
             {/* Business Onboarding */}
             <Route path="/business-onboarding" element={<BusinessOnboarding />} />
+            <Route path="/merchant-businesses" element={<MerchantVerifiedBusinesses />} />
 
             {/* Admin Portal Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
@@ -76,6 +90,7 @@ function App() {
             <Route path="/admin/map" element={<AdminMapManagement />} />
             <Route path="/admin/communication" element={<AdminCommunication />} />
             <Route path="/admin/content" element={<AdminContentManagement />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/admin/security" element={<AdminSecurity />} />
             <Route path="/admin/settings" element={<AdminSettings />} />

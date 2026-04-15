@@ -4,13 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminTransactions = () => {
   return (
-    <RoleBasedRoute requiredPermission="canManageTransactions">
-      <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
         <div className="flex-1 overflow-y-auto">
@@ -105,8 +103,7 @@ const AdminTransactions = () => {
             </Tabs>
           </div>
         </div>
-      </div>
-    </RoleBasedRoute>
+    </div>
   );
 };
 

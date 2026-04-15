@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getByFilters, post, update } from "@/lib/firestoreCrud";
+import { auth } from "@/lib/firebaseConfig";
 import { IUser, UserRole, UserStatus, AdminPermissions } from "@/Types/auth";
-import { 
-  DashboardMetrics, 
-  UserManagementFilters, 
+import {
+  DashboardMetrics,
+  UserManagementFilters,
   BusinessApprovalWorkflow,
   Transaction,
   SupportTicket,
@@ -112,17 +113,17 @@ export const useDashboardMetrics = () => {
         // Fetch all users
         const usersResult = await getByFilters("users", []);
         const users = usersResult.data || [];
-        
+
         // Fetch all businesses from the "business" collection
         const businessesResult = await getByFilters("business", []);
         const businesses = businessesResult.data || [];
-        
+
         // Calculate metrics from real data
         const totalUsers = users.length;
         const totalBusinesses = businesses.length;
         const activeBusinesses = businesses.filter((b: any) => b.status === 'approved' && !b.isBanned).length;
         const pendingApprovals = businesses.filter((b: any) => b.status === 'pending').length;
-        
+
         // Calculate new signups today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -130,55 +131,55 @@ export const useDashboardMetrics = () => {
           const createdAt = new Date(u.createdAt);
           return createdAt >= today;
         }).length;
-        
+
         const newBusinessSignupsToday = businesses.filter((b: any) => {
           if (!b.createdAt) return false;
           const createdAt = new Date(b.createdAt);
           return createdAt >= today;
         }).length;
-        
+
         // Fetch transactions data
         const transactionsResult = await getByFilters("transactions", []);
         const transactions = transactionsResult.data || [];
-        
+
         // Calculate transaction metrics
         // Reuse the 'today' variable already declared above
-        
+
         const thisWeek = new Date();
         thisWeek.setDate(thisWeek.getDate() - 7);
         thisWeek.setHours(0, 0, 0, 0);
-        
+
         const thisMonth = new Date();
         thisMonth.setMonth(thisMonth.getMonth() - 1);
         thisMonth.setHours(0, 0, 0, 0);
-        
+
         const transactionsToday = transactions.filter((t: any) => {
           const createdAt = new Date(t.createdAt);
           return createdAt >= today && t.status === 'completed';
         }).length;
-        
+
         const transactionsThisWeek = transactions.filter((t: any) => {
           const createdAt = new Date(t.createdAt);
           return createdAt >= thisWeek && t.status === 'completed';
         }).length;
-        
+
         const transactionsThisMonth = transactions.filter((t: any) => {
           const createdAt = new Date(t.createdAt);
           return createdAt >= thisMonth && t.status === 'completed';
         }).length;
-        
+
         const totalRevenue = transactions
           .filter((t: any) => t.status === 'completed')
           .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
-        
+
         const appCommission = transactions
           .filter((t: any) => t.status === 'completed')
           .reduce((sum: number, t: any) => sum + (t.commission || 0), 0);
-        
+
         const merchantEarnings = transactions
           .filter((t: any) => t.status === 'completed')
           .reduce((sum: number, t: any) => sum + (t.merchantEarnings || 0), 0);
-        
+
         return {
           totalUsers,
           totalBusinesses,
@@ -255,7 +256,7 @@ export const useUserById = (userId: string) => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<IUser> }) => {
       return update("users", userId, {
@@ -271,7 +272,7 @@ export const useUpdateUser = () => {
 
 export const useSuspendUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
       return update("users", userId, {
@@ -279,6 +280,43 @@ export const useSuspendUser = () => {
         suspensionReason: reason,
         suspendedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useApproveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, adminId }: { userId: string; adminId?: string }) => {
+      return update("users", userId, {
+        status: "active" as UserStatus,
+        updatedAt: new Date().toISOString(),
+        approvedBy: adminId,
+        approvedAt: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useRejectUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, adminId, reason }: { userId: string; adminId?: string; reason?: string }) => {
+      return update("users", userId, {
+        status: "rejected" as UserStatus,
+        updatedAt: new Date().toISOString(),
+        rejectedBy: adminId,
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: reason,
       });
     },
     onSuccess: () => {
@@ -302,16 +340,16 @@ export const useBusinessApprovals = () => {
 
 export const useApproveBusiness = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ 
-      approvalId, 
-      adminId, 
-      notes 
-    }: { 
-      approvalId: string; 
-      adminId: string; 
-      notes?: string; 
+    mutationFn: async ({
+      approvalId,
+      adminId,
+      notes
+    }: {
+      approvalId: string;
+      adminId: string;
+      notes?: string;
     }) => {
       const approval = await update("business_approvals", approvalId, {
         status: "approved",
@@ -319,12 +357,12 @@ export const useApproveBusiness = () => {
         reviewedAt: new Date().toISOString(),
         notes,
       });
-      
+
       // Also update the business status
       const businessApproval = await getByFilters("business_approvals", [
         { key: "id", operator: "==", value: approvalId }
       ]);
-      
+
       if (businessApproval.data[0]) {
         await update("businesses", businessApproval.data[0].businessId, {
           isApproved: true,
@@ -332,7 +370,7 @@ export const useApproveBusiness = () => {
           approvedBy: adminId,
         });
       }
-      
+
       return approval;
     },
     onSuccess: () => {
@@ -344,16 +382,16 @@ export const useApproveBusiness = () => {
 
 export const useRejectBusiness = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ 
-      approvalId, 
-      adminId, 
-      reason 
-    }: { 
-      approvalId: string; 
-      adminId: string; 
-      reason: string; 
+    mutationFn: async ({
+      approvalId,
+      adminId,
+      reason
+    }: {
+      approvalId: string;
+      adminId: string;
+      reason: string;
     }) => {
       return update("business_approvals", approvalId, {
         status: "rejected",
@@ -381,16 +419,16 @@ export const useTransactions = (filters?: any) => {
 
 export const useUpdateTransactionStatus = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ 
-      transactionId, 
-      status, 
-      adminId 
-    }: { 
-      transactionId: string; 
-      status: string; 
-      adminId: string; 
+    mutationFn: async ({
+      transactionId,
+      status,
+      adminId
+    }: {
+      transactionId: string;
+      status: string;
+      adminId: string;
     }) => {
       return update("transactions", transactionId, {
         status,
@@ -417,16 +455,16 @@ export const useSupportTickets = () => {
 
 export const useAssignTicket = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ 
-      ticketId, 
-      adminId, 
-      adminName 
-    }: { 
-      ticketId: string; 
-      adminId: string; 
-      adminName: string; 
+    mutationFn: async ({
+      ticketId,
+      adminId,
+      adminName
+    }: {
+      ticketId: string;
+      adminId: string;
+      adminName: string;
     }) => {
       return update("support_tickets", ticketId, {
         assignedTo: adminId,
@@ -505,16 +543,16 @@ export const useSystemSettings = () => {
 
 export const useUpdateSystemSetting = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ 
-      settingId, 
-      value, 
-      adminId 
-    }: { 
-      settingId: string; 
-      value: any; 
-      adminId: string; 
+    mutationFn: async ({
+      settingId,
+      value,
+      adminId
+    }: {
+      settingId: string;
+      value: any;
+      adminId: string;
     }) => {
       return update("system_settings", settingId, {
         value,
@@ -558,9 +596,33 @@ export const hasPermission = (userRole: UserRole, permission: keyof AdminPermiss
 // Business approval functions for the main business collection
 export const useApproveBusinessDirect = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ businessId, adminNotes }: { businessId: string; adminNotes?: string }) => {
+      try {
+        const idToken = await auth.currentUser?.getIdToken(true);
+        const response = await fetch('https://api-wki5bofifq-uc.a.run.app/admin/verification/decision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+          },
+          body: JSON.stringify({
+            businessId,
+            approved: true
+          })
+        });
+
+        if (!response.ok) {
+          console.error("External decision API failed:", await response.text());
+          throw new Error("Failed to notify external verification system");
+        }
+      } catch (err) {
+        console.error("Error calling external decision API:", err);
+        // We might want to throw or just log depending on requirements
+        // throw err; 
+      }
+
       return update("business", businessId, {
         status: 'approved',
         approvedAt: new Date().toISOString(),
@@ -577,9 +639,30 @@ export const useApproveBusinessDirect = () => {
 
 export const useRejectBusinessDirect = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ businessId, reason }: { businessId: string; reason: string }) => {
+      try {
+        const idToken = await auth.currentUser?.getIdToken(true);
+        const response = await fetch('https://api-wki5bofifq-uc.a.run.app/admin/verification/decision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+          },
+          body: JSON.stringify({
+            businessId,
+            approved: false
+          })
+        });
+
+        if (!response.ok) {
+          console.error("External decision API failed:", await response.text());
+        }
+      } catch (err) {
+        console.error("Error calling external decision API:", err);
+      }
+
       return update("business", businessId, {
         status: 'rejected',
         rejectedAt: new Date().toISOString(),

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Globe, 
-  Upload, 
-  CheckCircle, 
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  Upload,
+  CheckCircle,
   ArrowRight,
   ArrowLeft,
   Camera,
@@ -26,31 +26,36 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUserProfile } from '@/services/profile.service';
+import { auth } from '@/lib/firebaseConfig';
+import { post } from '@/lib/firestoreCrud';
 
 const BusinessOnboarding = () => {
   const navigate = useNavigate();
   const { data: profile } = useUserProfile();
-  
+
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     // Business Information
     businessName: '',
     businessType: '',
     description: '',
     categories: [] as string[],
-    
+
     // Contact Information
     phone: '',
     email: profile?.email || '',
     website: '',
-    
+
     // Location
     address: '',
     city: '',
     state: '',
     zipCode: '',
     country: 'United States',
-    
+    lat: '',
+    lng: '',
+
     // Business Details
     hours: {
       monday: { open: '', close: '', closed: false },
@@ -61,22 +66,16 @@ const BusinessOnboarding = () => {
       saturday: { open: '', close: '', closed: false },
       sunday: { open: '', close: '', closed: false }
     },
-    
-    // Services/Products
-    services: [] as string[],
-    hasMenu: false,
-    isBookable: false,
-    isEcommerce: false,
-    
+
     // Images
     featuredImage: '',
     galleryImages: [] as string[],
-    
+
     // Documents
     businessLicense: '',
     taxId: '',
     insurance: '',
-    
+
     // Payment
     paymentMethods: [] as string[],
     commissionRate: 5
@@ -138,15 +137,6 @@ const BusinessOnboarding = () => {
     }));
   };
 
-  const handleServiceToggle = (service: string) => {
-    setFormData(prev => ({
-      ...prev,
-      services: prev.services.includes(service)
-        ? prev.services.filter(s => s !== service)
-        : [...prev.services, service]
-    }));
-  };
-
   const handlePaymentMethodToggle = (method: string) => {
     setFormData(prev => ({
       ...prev,
@@ -169,14 +159,69 @@ const BusinessOnboarding = () => {
   };
 
   const handleSubmit = async () => {
+    if (!auth.currentUser) {
+      console.error("No authenticated user found.");
+      return;
+    }
+
     try {
-      // Here you would submit the business data to your backend
-      console.log('Submitting business data:', formData);
-      
-      // For now, just navigate to the dashboard
-      navigate('/home');
+      setIsSubmitting(true);
+      const idToken = await auth.currentUser.getIdToken(true);
+
+      const documentUrls = [formData.featuredImage, ...formData.galleryImages].filter(url => url !== "");
+
+      const payload = {
+        businessName: formData.businessName || "Default Business Name",
+        taxInfo: formData.taxId || "Not Provided yet",
+        registrationInfo: formData.businessLicense || "Not Provided yet",
+        address: formData.address || "Not Provided",
+        location: {
+          address: formData.address || "Not Provided",
+          city: formData.city || "Not Provided",
+          state: formData.state || "Not Provided",
+          country: formData.country || "Not Provided",
+          postalCode: formData.zipCode || "Not Provided"
+        },
+        coordinates: {
+          lat: parseFloat(formData.lat) || 0,
+          lng: parseFloat(formData.lng) || 0
+        },
+        contactPhone: formData.phone || "Not Provided",
+        contactEmail: formData.email || "Not Provided",
+        categories: formData.categories.length > 0 ? formData.categories : ["Not Provided"],
+        documentUrls: documentUrls.length > 0 ? documentUrls : ["Not Provided"]
+      };
+
+      console.log('Submitting business data payload:', payload);
+
+      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Backend Error Response:", errorText);
+        let errorMessage = response.statusText;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorText;
+        } catch {
+          errorMessage = errorText || response.statusText;
+        }
+        throw new Error(`API error (${response.status}): ${errorMessage}`);
+      }
+
+      console.log('Successfully onboarded business.');
+      navigate('/merchant-businesses');
     } catch (error) {
       console.error('Error submitting business data:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -189,7 +234,7 @@ const BusinessOnboarding = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Information</h2>
               <p className="text-gray-600">Tell us about your business</p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="businessName">Business Name *</Label>
@@ -201,7 +246,7 @@ const BusinessOnboarding = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="businessType">Business Type *</Label>
                 <Select value={formData.businessType} onValueChange={(value) => handleInputChange('businessType', value)}>
@@ -217,7 +262,7 @@ const BusinessOnboarding = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label htmlFor="description">Business Description *</Label>
                 <Textarea
@@ -229,7 +274,7 @@ const BusinessOnboarding = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label>Business Categories *</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
@@ -256,7 +301,7 @@ const BusinessOnboarding = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Contact Information</h2>
               <p className="text-gray-600">How can customers reach you?</p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone">Phone Number *</Label>
@@ -269,7 +314,7 @@ const BusinessOnboarding = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="email">Email Address *</Label>
                 <Input
@@ -281,7 +326,7 @@ const BusinessOnboarding = () => {
                   required
                 />
               </div>
-              
+
               <div className="md:col-span-2">
                 <Label htmlFor="website">Website (Optional)</Label>
                 <Input
@@ -303,7 +348,7 @@ const BusinessOnboarding = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Location</h2>
               <p className="text-gray-600">Where is your business located?</p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="address">Street Address *</Label>
@@ -315,7 +360,7 @@ const BusinessOnboarding = () => {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="city">City *</Label>
@@ -327,7 +372,7 @@ const BusinessOnboarding = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="state">State *</Label>
                   <Input
@@ -338,7 +383,7 @@ const BusinessOnboarding = () => {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="zipCode">ZIP Code *</Label>
                   <Input
@@ -347,6 +392,32 @@ const BusinessOnboarding = () => {
                     onChange={(e) => handleInputChange('zipCode', e.target.value)}
                     placeholder="12345"
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="lat">Latitude (Optional)</Label>
+                  <Input
+                    id="lat"
+                    type="number"
+                    step="any"
+                    value={formData.lat}
+                    onChange={(e) => handleInputChange('lat', e.target.value)}
+                    placeholder="e.g. 40.7128"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="lng">Longitude (Optional)</Label>
+                  <Input
+                    id="lng"
+                    type="number"
+                    step="any"
+                    value={formData.lng}
+                    onChange={(e) => handleInputChange('lng', e.target.value)}
+                    placeholder="e.g. -74.0060"
                   />
                 </div>
               </div>
@@ -361,18 +432,18 @@ const BusinessOnboarding = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Hours</h2>
               <p className="text-gray-600">When is your business open?</p>
             </div>
-            
+
             <div className="space-y-4">
               {Object.entries(formData.hours).map(([day, hours]) => (
                 <div key={day} className="flex items-center space-x-4 p-4 border rounded-lg">
                   <div className="w-20">
                     <Label className="capitalize">{day}</Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       checked={hours.closed}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleInputChange('hours', {
                           ...formData.hours,
                           [day]: { ...hours, closed: checked as boolean }
@@ -381,13 +452,13 @@ const BusinessOnboarding = () => {
                     />
                     <Label>Closed</Label>
                   </div>
-                  
+
                   {!hours.closed && (
                     <div className="flex items-center space-x-2">
                       <Input
                         type="time"
                         value={hours.open}
-                        onChange={(e) => 
+                        onChange={(e) =>
                           handleInputChange('hours', {
                             ...formData.hours,
                             [day]: { ...hours, open: e.target.value }
@@ -399,7 +470,7 @@ const BusinessOnboarding = () => {
                       <Input
                         type="time"
                         value={hours.close}
-                        onChange={(e) => 
+                        onChange={(e) =>
                           handleInputChange('hours', {
                             ...formData.hours,
                             [day]: { ...hours, close: e.target.value }
@@ -419,70 +490,23 @@ const BusinessOnboarding = () => {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Services & Features</h2>
-              <p className="text-gray-600">What services do you offer?</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Methods</h2>
+              <p className="text-gray-600">Select the payment methods your business accepts.</p>
             </div>
-            
-            <div className="space-y-6">
-              <div>
-                <Label>Available Services</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {serviceTypes.map((service) => (
-                    <div key={service} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={service}
-                        checked={formData.services.includes(service)}
-                        onCheckedChange={() => handleServiceToggle(service)}
-                      />
-                      <Label htmlFor={service} className="text-sm">{service}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="hasMenu"
-                    checked={formData.hasMenu}
-                    onCheckedChange={(checked) => handleInputChange('hasMenu', checked)}
-                  />
-                  <Label htmlFor="hasMenu">We have a food menu</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isBookable"
-                    checked={formData.isBookable}
-                    onCheckedChange={(checked) => handleInputChange('isBookable', checked)}
-                  />
-                  <Label htmlFor="isBookable">Customers can make reservations/appointments</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isEcommerce"
-                    checked={formData.isEcommerce}
-                    onCheckedChange={(checked) => handleInputChange('isEcommerce', checked)}
-                  />
-                  <Label htmlFor="isEcommerce">We sell products online</Label>
-                </div>
-              </div>
-              
-              <div>
-                <Label>Accepted Payment Methods</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {paymentMethods.map((method) => (
-                    <div key={method} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={method}
-                        checked={formData.paymentMethods.includes(method)}
-                        onCheckedChange={() => handlePaymentMethodToggle(method)}
-                      />
-                      <Label htmlFor={method} className="text-sm">{method}</Label>
-                    </div>
-                  ))}
-                </div>
+
+
+            <div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                {paymentMethods.map((method) => (
+                  <div key={method} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={method}
+                      checked={formData.paymentMethods.includes(method)}
+                      onCheckedChange={() => handlePaymentMethodToggle(method)}
+                    />
+                    <Label htmlFor={method} className="text-sm">{method}</Label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -495,7 +519,7 @@ const BusinessOnboarding = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Review & Submit</h2>
               <p className="text-gray-600">Review your information before submitting</p>
             </div>
-            
+
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -518,7 +542,7 @@ const BusinessOnboarding = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -532,7 +556,7 @@ const BusinessOnboarding = () => {
                   {formData.website && <p><strong>Website:</strong> {formData.website}</p>}
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -543,9 +567,14 @@ const BusinessOnboarding = () => {
                 <CardContent>
                   <p>{formData.address}</p>
                   <p>{formData.city}, {formData.state} {formData.zipCode}</p>
+                  {(formData.lat || formData.lng) && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Coordinates: {formData.lat || '0'}, {formData.lng || '0'}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
-              
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -613,10 +642,20 @@ const BusinessOnboarding = () => {
           ) : (
             <Button
               onClick={handleSubmit}
+              disabled={isSubmitting}
               className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle className="h-4 w-4" />
-              <span>Submit Application</span>
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Submit Application</span>
+                </>
+              )}
             </Button>
           )}
         </div>

@@ -69,6 +69,7 @@ function BusinessDashboard2() {
       {/* Sidebar */}
       <Sidebar />
 
+
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="px-8 py-6">

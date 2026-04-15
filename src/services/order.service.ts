@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getByFilters, post, update, getById } from '@/lib/firestoreCrud';
-import { IOrder, IOrderFilters, IOrderStats, IOrderAction, OrderStatus, PaymentStatus } from '@/Types/order';
+import { IOrder, IOrderFilters, IOrderStats, IOrderAction, OrderStatus, PaymentStatus, IApiOrder } from '@/Types/order';
+import { auth } from '@/lib/firebaseConfig';
 
 // Get all orders with optional filters
 export const useOrders = (filters?: IOrderFilters) => {
@@ -292,6 +293,59 @@ export const useCreateOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-stats"] });
+    },
+  });
+};
+
+export const useApiMerchantOrders = () => {
+  return useQuery({
+    queryKey: ["api-merchant-orders"],
+    queryFn: async () => {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("User not authenticated.");
+
+      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/orders", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch merchant orders");
+      }
+
+      const data = await response.json();
+      return (Array.isArray(data) ? data : (data.orders || data.items || [])) as IApiOrder[];
+    },
+    refetchInterval: 30000,
+  });
+};
+
+export const useUpdateApiOrderStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("User not authenticated.");
+
+      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/orders/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ orderId, status })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update order status: ${errorText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-merchant-orders"] });
     },
   });
 };

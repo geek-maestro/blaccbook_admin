@@ -1,19 +1,34 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  createUserWithEmailAndPassword, 
-  GoogleAuthProvider, 
-  signInWithCredential, 
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { post, getByFilters } from "@/lib/firestoreCrud";
+import { getByFilters } from "@/lib/firestoreCrud";
 
-// First, add a function to fetch user data
-const fetchUserData = async (userId: string) => {
-  const result = await getByFilters("users", [
-    { key: "userId", operator: "==", value: userId }
+const fetchUserData = async (uid: string, email?: string | null) => {
+  // Try finding by userId
+  let result = await getByFilters("users", [
+    { key: "userId", operator: "==", value: uid }
   ]);
+
+  // Alternative 1: Try finding by uid field if userId is different
+  if (result.data.length === 0) {
+    result = await getByFilters("users", [
+      { key: "uid", operator: "==", value: uid }
+    ]);
+  }
+
+  // Alternative 2: Try finding by email
+  if (result.data.length === 0 && email) {
+    result = await getByFilters("users", [
+      { key: "email", operator: "==", value: email }
+    ]);
+  }
+
   if (result.data.length === 0) {
     throw new Error("User profile not found");
   }
@@ -28,14 +43,26 @@ const saveUserToStorage = (userData: any) => {
 // Function to sign in with credentials
 const credSignIn = async (email: string, password: string) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
+  let userData;
   try {
-    const userData = await fetchUserData(userCred.user.uid);
-    saveUserToStorage(userData);
-    return { user: userCred.user, userData };
+    userData = await fetchUserData(userCred.user.uid, userCred.user.email);
   } catch (err) {
-    console.warn("User profile not found for user:", userCred.user.uid);
+    console.warn("User profile not found for user:", userCred.user.uid, "email:", userCred.user.email);
     return { user: userCred.user, userData: null } as const;
   }
+
+
+  saveUserToStorage(userData);
+
+  let token = null;
+  try {
+    token = await userCred.user.getIdToken();
+    console.log("Firebase ID Token:", token);
+  } catch (tokenErr) {
+    console.warn("Could not get ID Token:", tokenErr);
+  }
+
+  return { user: userCred.user, userData, token };
 };
 
 // Custom Hook: Sign in with Email & Password
@@ -64,26 +91,7 @@ export const useCredSignIn = () => {
   });
 };
 
-// Function to create user profile in Firestore
-const createProfile = async (
-  email: string,
-  userId: string,
-  firstname: string,
-  lastname: string,
-  username: string,
-  avatar: string,
-  userType?: string
-) => {
-  return post("users", {
-    email,
-    userId,
-    name: `${firstname} ${lastname}`,
-    userType: userType || "customer",
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    phone: "",
-  });
-};
+
 
 // Function to handle sign-up with email and password
 const signUpWithEmail = async (
@@ -98,8 +106,54 @@ const signUpWithEmail = async (
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const userId = userCredential.user.uid;
 
-  await createProfile(email, userId, firstname, lastname, username, avatar, userType);
-  
+  try {
+    const idToken = await userCredential.user.getIdToken();
+    const bootstrapResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/auth/bootstrap", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`
+      },
+      body: JSON.stringify({
+        requestedRole: "merchant"
+      })
+    });
+
+    if (!bootstrapResponse.ok) {
+      console.error("Failed to bootstrap user role via API", await bootstrapResponse.text());
+    } else {
+      console.log("Successfully bootstrapped user role");
+    }
+
+    const profilePayload = {
+      firstName: firstname,
+      lastName: lastname,
+      name: `${firstname} ${lastname}`,
+      phoneNumber: "", // Phone is not collected in standard email signup
+      defaultLocation: {
+        additionalProp1: {}
+      }
+    };
+
+    const profileResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/accounts/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`
+      },
+      body: JSON.stringify(profilePayload)
+    });
+
+    if (!profileResponse.ok) {
+      console.error("Failed to update profile via API", await profileResponse.text());
+    } else {
+      console.log("Successfully updated profile via API");
+    }
+
+  } catch (err) {
+    console.error("Error calling bootstrap or profile APIs:", err);
+  }
+
   return userId;
 };
 
@@ -119,7 +173,7 @@ export const useSignUp = () => {
       avatar: string;
       username: string;
     }) => signUpWithEmail(email, password, firstname, lastname, userType, avatar, username),
-    
+
     onSuccess: (userId) => {
       console.log("User registered:", userId);
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
@@ -147,31 +201,83 @@ export const socialLogin = async (accessToken: string) => {
     const credential = GoogleAuthProvider.credential(null, accessToken);
     const userCredential = await signInWithCredential(auth, credential);
     const user = userCredential.user;
-    
+
     // Check if user exists in users collection
     const userExists = await checkUserExists(user.uid);
-    
-    if (!userExists) {
+    const isNewUser = !userExists;
+
+    if (isNewUser) {
       const nameParts = user.displayName?.split(' ') || ['', ''];
       const firstname = nameParts[0];
       const lastname = nameParts[nameParts.length - 1];
-      
-      await createProfile(
-        user.email || '',
-        user.uid,
-        firstname,
-        lastname,
-        firstname.toLowerCase() + lastname.toLowerCase(),
-        user.photoURL || '',
-        'customer'
-      );
+
+      try {
+        const idToken = await user.getIdToken();
+        const bootstrapResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/auth/bootstrap", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`
+          },
+          body: JSON.stringify({
+            requestedRole: "merchant"
+          })
+        });
+
+        if (!bootstrapResponse.ok) {
+          console.error("Failed to bootstrap user role via API", await bootstrapResponse.text());
+        } else {
+          console.log("Successfully bootstrapped user role");
+        }
+
+        const profilePayload = {
+          firstName: firstname,
+          lastName: lastname,
+          name: user.displayName || "",
+          phoneNumber: user.phoneNumber || "",
+          defaultLocation: {
+            additionalProp1: {}
+          }
+        };
+
+        const profileResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/accounts/profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`
+          },
+          body: JSON.stringify(profilePayload)
+        });
+
+        if (!profileResponse.ok) {
+          console.error("Failed to update profile via API", await profileResponse.text());
+        } else {
+          console.log("Successfully updated profile via API");
+        }
+
+      } catch (err) {
+        console.error("Error calling bootstrap or profile APIs:", err);
+      }
     }
-    
+
     // Fetch and save user data
-    const userData = await fetchUserData(user.uid);
-    saveUserToStorage(userData);
-    
-    return { user, userData };
+    let userData = null;
+    try {
+      userData = await fetchUserData(user.uid, user.email);
+      saveUserToStorage(userData);
+    } catch (err) {
+      console.warn("User profile not found for social user:", user.uid, "email:", user.email);
+    }
+
+    let token = null;
+    try {
+      token = await user.getIdToken();
+      console.log("Firebase ID Token (Social):", token);
+    } catch (tokenErr) {
+      console.warn("Could not get ID Token:", tokenErr);
+    }
+
+    return { user, userData, token };
   } catch (error) {
     console.error("Social login error:", error);
     throw error;
@@ -221,7 +327,7 @@ export const useLogout = () => {
       // Or if you want to be more specific, invalidate specific queries:
       // queryClient.invalidateQueries({ queryKey: ["authUser"] });
       // queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      
+
       console.log("Logged out successfully");
     },
     onError: (error) => {

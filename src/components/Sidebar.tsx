@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Building2, LayoutDashboard, DollarSign, FileText, MessageSquare, Settings, LogOut, Menu, Store, Wrench, CalendarClock } from "lucide-react";
@@ -8,9 +8,39 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useLogout } from '@/services/auth1.service';
+import { auth } from '@/lib/firebaseConfig';
 
 function Sidebar() {
   const navigate = useNavigate();
+
+  const [userName, setUserName] = useState('User');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (!auth.currentUser) return;
+        const idToken = await auth.currentUser.getIdToken();
+        const response = await fetch("https://api-wki5bofifq-uc.a.run.app/auth/me", {
+          headers: {
+            "Authorization": `Bearer ${idToken}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Adjust these paths depending on the actual API response structure
+          const fetchedUserName = data?.profile?.name || data?.name || data?.user?.name ||
+            (data?.firstname ? `${data.firstname} ${data.lastname || ''}` : null);
+
+          if (fetchedUserName) setUserName(fetchedUserName);
+        }
+      } catch (err) {
+        console.error("Error fetching user data from /auth/me:", err);
+      }
+    };
+
+    fetchUserData();
+  }, [auth.currentUser]);
 
   const { mutate: signOut, isPending } = useLogout();
 
@@ -28,18 +58,18 @@ function Sidebar() {
   };
 
   const location = useLocation();
-//   const navigate = useNavigate();
+  //   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isActivePath = (path :string) => {
+  const isActivePath = (path: string) => {
     return location.pathname === path;
   };
 
- 
+
   const navItems = [
-    { 
-      path: '/home', 
-      icon: LayoutDashboard, 
+    {
+      path: '/home',
+      icon: LayoutDashboard,
       label: 'Dashboard',
       description: 'Overview & Analytics'
     },
@@ -49,12 +79,12 @@ function Sidebar() {
     //   label: 'Businesses',
     //   description: 'Businesses Onboard'
     // },
-    // {
-    //   path: '/merchants',
-    //   icon: Store,
-    //   label: 'Merchants',
-    //   description: 'Manage merchants'
-    // },
+    {
+      path: '/merchant-businesses',
+      icon: Store,
+      label: 'My Businesses',
+      description: 'Verified Listings'
+    },
     {
       path: '/services',
       icon: Wrench,
@@ -73,12 +103,12 @@ function Sidebar() {
       label: 'Orders',
       description: 'Manage orders'
     },
-    { 
-      path: '/investments', 
-      icon: DollarSign, 
-      label: 'Investment',
-      description: 'investors & money'
-    },
+    // {
+    //   path: '/investments',
+    //   icon: DollarSign,
+    //   label: 'Investment',
+    //   description: 'investors & money'
+    // },
     // { 
     //   path: '/report', 
     //   icon: FileText, 
@@ -91,9 +121,9 @@ function Sidebar() {
     //   label: 'Reviews',
     //   description: 'Communications'
     // },
-    { 
-      path: '/settings', 
-      icon: Settings, 
+    {
+      path: '/settings',
+      icon: Settings,
       label: 'Settings',
       description: 'Preferences'
     },
@@ -104,10 +134,10 @@ function Sidebar() {
       {/* Logo Section */}
       <div className="px-6 py-4">
         <div className="flex items-center space-x-2">
-          <Building2 className="h-6 w-6 text-blue-300" />
+          <img src="/logo.jpeg" alt="BlaccBook Logo" className="h-8 w-8 object-contain rounded-full" />
           <div>
             <h2 className="text-xl font-bold tracking-wider text-white">BLACCBOOK</h2>
-            <p className="text-xs text-blue-200">Black Businesses</p>
+            <p className="text-xs text-blue-200">{userName}</p>
           </div>
         </div>
       </div>
@@ -159,7 +189,7 @@ function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-100"
-         onClick={handleLogout}
+          onClick={handleLogout}
         >
           <LogOut className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" />
           <span>Sign Out</span>

@@ -2,12 +2,11 @@ import React from 'react';
 import { BarChart3, TrendingUp, Users, Building2, DollarSign, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminAnalytics = () => {
   return (
-    <RoleBasedRoute requiredPermission="canViewAnalytics">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -177,7 +176,7 @@ const AdminAnalytics = () => {
           </div>
         </div>
       </div>
-    </RoleBasedRoute>
+    </>
   );
 };
 

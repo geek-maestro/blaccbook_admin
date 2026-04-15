@@ -37,7 +37,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminMapManagement = () => {
@@ -160,7 +159,7 @@ const AdminMapManagement = () => {
   };
 
   return (
-    <RoleBasedRoute requiredPermission="canManageBusinesses">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -609,7 +608,7 @@ const AdminMapManagement = () => {
           </div>
         </div>
       </div>
-    </RoleBasedRoute>
+    </>
   );
 };
 

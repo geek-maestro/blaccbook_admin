@@ -22,24 +22,33 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [appError, setAppError] = useState<string | null>(null);
   const { mutate: signIn, isPending, error } = useCredSignIn();
   const { mutate: socialLogin, isPending: socialLoginPending, error: socialLoginError } = useSocialLogin();
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppError(null);
     signIn(
       { email, password },
       {
         onSuccess: (data) => {
-          // Redirect based on user type
-          const userType = data.userData?.userType || 'customer';
+          console.log("User ID:", data.user?.uid);
+          console.log("Token:", (data as any).token);
+          // Redirect based on user type or role
+          const rawUserType = data.userData?.userType || data.userData?.role;
+          const userType = typeof rawUserType === 'string' ? rawUserType.toLowerCase() : rawUserType;
+          console.log("Resolved userType for routing:", userType);
+
           if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
             navigate("/admin");
-          } else if (userType === 'business_owner') {
-            navigate("/home");
+          } else if (userType === 'merchant') {
+            navigate("/home", { state: { token: (data as any).token } });
+          } else if (userType === 'customer' || userType === 'consumer') {
+            setAppError("Use mobile app to view your customer page.");
           } else {
-            navigate("/home");
+            navigate("/home", { state: { token: (data as any).token } });
           }
         },
         onError: (error) => {
@@ -50,6 +59,7 @@ function Login() {
   };
 
   const handleSocialLogin = () => {
+    setAppError(null);
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
       .then((result) => {
@@ -58,14 +68,21 @@ function Login() {
           console.log(credential.accessToken, "credential", result.user, "user");
           socialLogin(credential.accessToken, {
             onSuccess: (data) => {
-              // Redirect based on user type
-              const userType = data.userData?.userType || 'customer';
+              console.log("Social User ID:", data.user?.uid);
+              console.log("Social Token:", (data as any).token);
+              // Redirect based on user type or role
+              const rawUserType = data.userData?.userType || data.userData?.role;
+              const userType = typeof rawUserType === 'string' ? rawUserType.toLowerCase() : rawUserType;
+              console.log("Resolved userType for social routing:", userType);
+
               if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
                 navigate("/admin");
-              } else if (userType === 'business_owner') {
-                navigate("/home");
+              } else if (userType === 'merchant') {
+                navigate("/home", { state: { token: (data as any).token } });
+              } else if (userType === 'customer' || userType === 'consumer') {
+                setAppError("Use mobile app to view your customer page.");
               } else {
-                navigate("/home");
+                navigate("/home", { state: { token: (data as any).token } });
               }
             },
             onError: (error) => {
@@ -80,11 +97,11 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+    <div className="w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-2 h-screen">
       <div className="w-full max-w-6xl">
         <Card className="grid grid-cols-1 lg:grid-cols-2 shadow-2xl border-0 overflow-hidden bg-white/95 backdrop-blur-sm">
           {/* Left side with image */}
-          <div className="hidden lg:block relative h-full min-h-[700px]">
+          <div className="hidden lg:block relative h-full min-h-[569px]">
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
@@ -93,10 +110,8 @@ function Login() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-indigo-900/95 flex flex-col items-center justify-center p-12">
                 <div className="text-center space-y-6">
-                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shadow-xl overflow-hidden border-2 border-white/30">
+                    <img src="/logo.jpeg" alt="BlaccBook Logo" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-4">
                     <h1 className="text-5xl font-bold text-white leading-tight">
@@ -122,26 +137,26 @@ function Login() {
           </div>
 
           {/* Right side with form */}
-          <div className="flex items-center justify-center p-8 lg:p-16">
-            <div className="w-full max-w-md space-y-8">
-              <div className="text-center space-y-2">
+          <div className="flex items-center justify-center p-8 lg:p-1">
+            <div className="w-full max-w-md space-y-1">
+              <div className="text-center">
                 <h2 className="text-3xl font-bold text-gray-900">
                   Welcome Back
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-sm">
                   Sign in to your account to continue
                 </p>
               </div>
 
-              {(error || socialLoginError) && (
+              {(error || socialLoginError || appError) && (
                 <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800">
-                    {error instanceof Error ? error.message : socialLoginError instanceof Error ? socialLoginError.message : "An error occurred"}
+                    {appError || (error instanceof Error ? error.message : socialLoginError instanceof Error ? socialLoginError.message : "An error occurred")}
                   </AlertDescription>
                 </Alert>
               )}
 
-              <form className="space-y-6" onSubmit={handleLogin}>
+              <form className="space-y-5" onSubmit={handleLogin}>
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                     Email Address
@@ -255,9 +270,10 @@ function Login() {
                       Create Account
                     </Button>
                   </p>
-                  
+
                   {/* Admin Access Links for Testing */}
-                  {/* <div className="pt-4 border-t border-gray-200">
+                  {/*  
+                  <div className="pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
                     <div className="space-y-2">
                       <Button
@@ -279,16 +295,18 @@ function Login() {
                             const { createTestAdmin } = await import("@/utils/createTestAdmin");
                             await createTestAdmin();
                             alert("Admin user created! Email: admin@blaccbook.com, Password: admin123");
-                          } catch (error) {
+                          } catch (error: any) {
                             console.error("Error creating admin:", error);
-                            alert("Error creating admin user. Check console for details.");
+                            alert(`Error creating admin user: ${error.message || "Unknown error"}`);
                           }
                         }}
                       >
                         👤 Create Test Admin
                       </Button>
                     </div>
-                  </div> */}
+                  </div>
+                  */}
+
                 </div>
               </form>
             </div>

@@ -3,45 +3,42 @@ import { IBusiness } from "@/Types/business";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auth } from "@/lib/firebaseConfig";
 
-const addBusiness = async ({
-  name,
-  email,
-  featuredImage,
-  categories,
-  images,
-  website,
-  contact,
-  features,
-  description,
-  isEcommerce,
-  isBookable,
-  hasMenu,
-  //   bookableDetails,
-  address,
-  rating,
-}: IBusiness) => {
-  const ownerUserId = auth.currentUser?.uid || "";
-  return post("business", {
-    name,
-    email,
-    categories,
-    images,
-    website,
-    contact,
-    features,
-    isEcommerce,
-    isBookable,
-    hasMenu,
-    address,
-    // bookableDetails,
-    description,
-    rating,
-    featuredImage,
-    ownerUserId,
-    status: 'pending', // New businesses start as pending approval
-    createdAt: new Date().toISOString(),
-    isBanned: false,
+const addBusiness = async (business: IBusiness) => {
+  const requestBody = {
+    businessName: business.name || "",
+    taxInfo: "",
+    registrationInfo: "",
+    address: business.address || "",
+    location: {
+      address: business.address || "",
+      city: "",
+      state: "",
+      country: "",
+      postalCode: ""
+    },
+    coordinates: {
+      lat: 0,
+      lng: 0
+    },
+    contactPhone: business.contact || "",
+    contactEmail: business.email || "",
+    categories: business.categories && business.categories.length > 0 ? business.categories : [""],
+    documentUrls: business.images && business.images.length > 0 ? business.images : [""]
+  };
+
+  const response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(requestBody)
   });
+
+  if (!response.ok) {
+    throw new Error(`Failed to submit business: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const editBusiness = async ({
@@ -202,10 +199,18 @@ export const useApprovedBusinesses = () => {
       const result = await getByFilters("business", []);
       if (result.error) throw new Error(result.error);
       // Filter to only show approved businesses
-      return (result.data as IBusiness[]).filter(business => 
-        business.status === 'approved' && !business.isBanned
-      );
     },
   });
 };
- 
+
+export const useApiBusinesses = () => {
+  return useQuery({
+    queryKey: ["apiBusinesses"],
+    queryFn: async () => {
+      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/content/businesses");
+      if (!response.ok) throw new Error("Failed to fetch businesses");
+      const data = await response.json();
+      return data.items || [];
+    }
+  });
+};

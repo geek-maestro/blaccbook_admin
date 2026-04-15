@@ -38,7 +38,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 import { useBusinesses } from '@/services/business.service';
 import { update } from '@/lib/firestoreCrud';
@@ -180,39 +179,34 @@ const AdminBusinessManagement = () => {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
-      <RoleBasedRoute requiredPermission="canManageBusinesses">
-        <div className="flex h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1 overflow-y-auto flex items-center justify-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          </div>
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </RoleBasedRoute>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <RoleBasedRoute requiredPermission="canManageBusinesses">
-        <div className="flex h-screen bg-gray-50">
-          <AdminSidebar />
-          <div className="flex-1 overflow-y-auto flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Businesses</h2>
-              <p className="text-gray-600">Please try refreshing the page</p>
-            </div>
+      <div className="flex h-screen bg-gray-50">
+        <AdminSidebar />
+        <div className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Businesses</h2>
+            <p className="text-gray-600">Please try refreshing the page</p>
           </div>
         </div>
-      </RoleBasedRoute>
+      </div>
     );
   }
 
   return (
-    <RoleBasedRoute requiredPermission="canManageBusinesses">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -671,7 +665,7 @@ const AdminBusinessManagement = () => {
           )}
         </DialogContent>
       </Dialog>
-    </RoleBasedRoute>
+    </>
   );
 };
 

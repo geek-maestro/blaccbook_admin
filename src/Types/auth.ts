@@ -1,6 +1,6 @@
 export type UserRole = 'super_admin' | 'admin' | 'business_owner' | 'consumer' | 'support_staff' | 'content_moderator' | 'finance_manager';
 
-export type UserStatus = 'active' | 'suspended' | 'pending_verification' | 'banned';
+export type UserStatus = 'active' | 'suspended' | 'pending_verification' | 'banned' | 'pending';
 
 export type VerificationStatus = {
   email: boolean;

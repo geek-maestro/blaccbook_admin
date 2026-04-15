@@ -36,7 +36,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUsers, useUpdateUser, useSuspendUser } from '@/services/admin.service';
 import { UserRole, UserStatus } from '@/Types/auth';
-import RoleBasedRoute from '@/components/RoleBasedRoute';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const UserManagement = () => {
@@ -192,7 +191,7 @@ const UserManagement = () => {
   }
 
   return (
-    <RoleBasedRoute requiredPermission="canManageUsers">
+    <>
       <div className="flex h-screen bg-gray-50">
         <AdminSidebar />
         
@@ -542,7 +541,7 @@ const UserManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </RoleBasedRoute>
+    </>
   );
 };
 

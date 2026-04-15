@@ -1,32 +1,56 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
-import { Users, Calendar, Building2, Wrench } from 'lucide-react';
+import { Calendar, Building2, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useBookings } from '@/services/booking.service';
-import { useBusinesses, useMyBusinesses } from '@/services/business.service';
-import { useServices, useMyServices } from '@/services/service.service';
+import { useMyBusinesses } from '@/services/business.service';
+import { useApiServices, useApiProducts } from '@/services/service.service';
 import { useUserProfile } from '@/services/profile.service';
 
 function BusinessDashboard() {
+  const location = useLocation();
+  const token = location.state?.token;
+
+  useEffect(() => {
+    if (token) {
+      fetch("https://api-wki5bofifq-uc.a.run.app/auth/me", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          console.log("Dashboard /auth/me UID:", data?.uid || data?.user?.uid || data?.userId);
+        })
+        .catch(err => console.error("Error fetching /auth/me in Dashboard:", err));
+    }
+  }, [token]);
+
   const { data: profile } = useUserProfile();
-  const isSuperAdmin = profile?.role === 'super_admin';
 
-  const { data: businessesAll } = useBusinesses();
   const { data: businessesMine } = useMyBusinesses();
-  const businesses: any[] = isSuperAdmin ? (businessesAll as any[] || []) : (businessesMine as any[] || []);
+  const businesses: any[] = (businessesMine as any[] || []);
 
-  const { data: servicesAll } = useServices();
-  const { data: servicesMine } = useMyServices();
-  const services: any[] = isSuperAdmin ? (servicesAll as any[] || []) : (servicesMine as any[] || []);
+  const { data: apiServices } = useApiServices();
+  const { data: apiProducts } = useApiProducts();
+
+  const allServicesList = Array.isArray(apiServices) ? apiServices : (apiServices?.items || apiServices?.data || []);
+  const allProductsList = Array.isArray(apiProducts) ? apiProducts : (apiProducts?.items || apiProducts?.data || []);
+  const uid = (profile as any)?.uid || (profile as any)?.id;
+
+  const allListings = [...allServicesList, ...allProductsList];
+  const services = profile?.role === 'super_admin' 
+    ? allListings 
+    : allListings.filter((s: any) => s.merchantUid === uid || s.businessId === uid || s.merchantId === uid);
 
   const { data: bookings } = useBookings({ refetchInterval: 10000 });
 
   const metrics = [
     { title: 'Bookings (live)', value: String((bookings as any[] | undefined)?.length || 0), icon: Calendar },
     { title: 'Businesses', value: String((businesses as any[]).length), icon: Building2 },
-    { title: 'Services', value: String((services as any[]).length), icon: Wrench },
-    { title: 'Users', value: isSuperAdmin ? '--' : '--', icon: Users },
+    { title: 'Services & Products', value: String((services as any[]).length), icon: Wrench },
   ];
 
   const recentBookings = useMemo(() => (bookings as any[] || []).slice(0, 5), [bookings]);

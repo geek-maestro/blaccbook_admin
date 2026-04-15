@@ -1,8 +1,8 @@
 export type OrderStatus = 'pending' | 'paid' | 'confirmed' | 'in_progress' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed';
 
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'disputed';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'disputed' | 'initiated';
 
-export type PaymentMethod = 'stripe' | 'paypal' | 'cash' | 'bank_transfer';
+export type PaymentMethod = 'stripe' | 'paypal' | 'cash' | 'bank_transfer' | 'manual';
 
 export interface IOrderItem {
   id: string;
@@ -16,6 +16,32 @@ export interface IOrderItem {
   description?: string;
   imageUrl?: string;
   customizations?: Record<string, any>;
+}
+
+export interface IApiOrderItem {
+  itemType: string;
+  itemId: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+}
+
+export interface IApiOrder {
+  id: string;
+  customerUid: string;
+  businessId: string;
+  merchantUid: string;
+  businessName: string;
+  businessAddress: string;
+  lineItems: IApiOrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentReference: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface IOrder {

@@ -6,11 +6,13 @@ type Props = {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
   height?: string;
+  address?: string;
+  onAddressChange?: (address: string) => void;
 };
 
 const containerStyle = { width: "100%", height: "100%" } as const;
 
-const MapPicker: React.FC<Props> = ({ apiKey, value, onChange, height = "300px" }) => {
+const MapPicker: React.FC<Props> = ({ apiKey, value, onChange, height = "300px", address, onAddressChange }) => {
   const { isLoaded } = useLoadScript({ googleMapsApiKey: apiKey });
 
   const center = value || { lat: 37.7749, lng: -122.4194 }; // default SF
