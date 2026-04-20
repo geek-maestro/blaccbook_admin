@@ -199,6 +199,7 @@ export const useApprovedBusinesses = () => {
       const result = await getByFilters("business", []);
       if (result.error) throw new Error(result.error);
       // Filter to only show approved businesses
+      return (result.data as IBusiness[]).filter(b => b.status === 'approved');
     },
   });
 };

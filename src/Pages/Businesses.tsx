@@ -152,7 +152,7 @@ const BusinessList = () => {
             <AddBusinessForm />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {businesses?.map((business) => (
+            {businesses?.map((business: IBusiness) => (
               <BusinessCard key={business.id} business={business} />
             ))}
           </div>

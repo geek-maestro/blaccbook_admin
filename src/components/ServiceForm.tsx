@@ -47,7 +47,7 @@ const ServiceForm: React.FC<Props> = ({ defaultMerchantId = "", onCreated, servi
   const { data: apiBusinesses } = useApiBusinesses();
   // We only permit creating services under approved businesses tied to this merchant (or all if super admin and no default passed).
   const businesses = apiBusinesses?.filter((b: any) => 
-    (isSuperAdmin || b.merchantUid === profile?.uid || b.merchantUid === defaultMerchantId) && 
+    (isSuperAdmin || b.merchantUid === profile?.userId || b.merchantUid === defaultMerchantId) && 
     b.verificationStatus === 'approved' // Or b.isActive if that's the desired metric, let's use both maybe, or just the status from the API.
   ) || [];
 

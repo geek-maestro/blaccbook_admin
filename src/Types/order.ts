@@ -42,6 +42,7 @@ export interface IApiOrder {
   paymentReference: string | null;
   createdAt: string;
   updatedAt: string;
+  notes?: string;
 }
 
 export interface IOrder {

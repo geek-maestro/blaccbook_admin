@@ -73,6 +73,7 @@ const BusinessOrderManagement = () => {
   const businessStats = {
     totalOrders: allOrders?.length || 0,
     pendingOrders: allOrders?.filter(o => o.status === 'pending').length || 0,
+    inProgressOrders: allOrders?.filter(o => o.status === 'in_progress').length || 0,
     paidOrders: allOrders?.filter(o => o.status === 'paid').length || 0,
     totalRevenue: allOrders?.reduce((sum, o) => sum + o.total, 0) || 0,
     ordersToday: allOrders?.filter(o => o.createdAt.startsWith(new Date().toISOString().split('T')[0])).length || 0,
@@ -440,7 +441,7 @@ const BusinessOrderManagement = () => {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?.orderNumber}</DialogTitle>
+            <DialogTitle>Order Details - {selectedOrder?.id?.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-6">
