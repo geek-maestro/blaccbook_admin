@@ -36,20 +36,29 @@ const getMyVerifiedBusinesses = async (): Promise<IBusinessVerification[]> => {
             businesses = data;
         } else if (data && typeof data === 'object') {
             console.log("Path 2: data is object, checking properties...");
-            if (Array.isArray(data.items)) {
-                console.log("Path 2a: Found data.items array with", data.items.length, "items");
-                businesses = data.items;
-            } else if (Array.isArray(data.businesses)) {
-                console.log("Path 2b: Found data.businesses array");
-                businesses = data.businesses;
-            } else if (Array.isArray(data.data)) {
-                console.log("Path 2c: Found data.data array");
-                businesses = data.data;
+            // List of potential keys where the array might be nested
+            const potentialKeys = ['items', 'businesses', 'data', 'verifiedBusinesses', 'results'];
+            
+            for (const key of potentialKeys) {
+                if (Array.isArray(data[key])) {
+                    console.log(`Path 2: Found data.${key} array with`, data[key].length, "items");
+                    businesses = data[key];
+                    break;
+                }
+                // Check for nested data property like items.data
+                if (data[key] && typeof data[key] === 'object' && Array.isArray(data[key].data)) {
+                    console.log(`Path 3: Found data.${key}.data array`);
+                    businesses = data[key].data;
+                    break;
+                }
+            }
+
+            if (businesses.length === 0 && !data.error) {
+                console.log("Path 4: No recognized properties found. Data keys:", Object.keys(data));
+                // If it's a small object and not an error, maybe it's a single business? (unlikely but possible)
             } else if (data.error) {
                 console.error("API returned an error:", data.error);
                 return [];
-            } else {
-                console.log("Path 2d: No recognized properties found. Data keys:", Object.keys(data));
             }
         }
 

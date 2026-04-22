@@ -146,6 +146,41 @@ const BusinessOnboarding = () => {
     }));
   };
 
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          formData.businessName.trim() !== '' &&
+          formData.businessType !== '' &&
+          formData.description.trim() !== '' &&
+          formData.categories.length > 0
+        );
+      case 2:
+        return (
+          formData.phone.trim() !== '' &&
+          formData.email.trim() !== '' &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+        );
+      case 3:
+        return (
+          formData.address.trim() !== '' &&
+          formData.city.trim() !== '' &&
+          formData.state.trim() !== '' &&
+          formData.zipCode.trim() !== ''
+        );
+      case 4:
+        return Object.values(formData.hours).every(
+          (h) => h.closed || (h.open !== '' && h.close !== '')
+        );
+      case 5:
+        return formData.paymentMethods.length > 0;
+      case 6:
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
@@ -634,6 +669,7 @@ const BusinessOnboarding = () => {
           {currentStep < totalSteps ? (
             <Button
               onClick={handleNext}
+              disabled={!isStepValid()}
               className="flex items-center space-x-2"
             >
               <span>Next</span>
@@ -642,7 +678,7 @@ const BusinessOnboarding = () => {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isStepValid()}
               className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
             >
               {isSubmitting ? (

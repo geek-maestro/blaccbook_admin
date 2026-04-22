@@ -185,6 +185,11 @@ const MerchantVerifiedBusinesses = () => {
                 {process.env.NODE_ENV === 'development' && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900">
                         <p>Debug: businesses type = {typeof businesses} | isArray = {String(Array.isArray(businesses))} | length = {Array.isArray(businesses) ? businesses.length : 'N/A'}</p>
+                        {Array.isArray(businesses) && businesses.length === 0 && (
+                          <p className="mt-1 font-mono text-[10px]">
+                            Check console for "Merchant businesses API response" to see the raw data structure.
+                          </p>
+                        )}
                     </div>
                 )}
 
