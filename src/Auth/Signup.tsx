@@ -32,7 +32,7 @@ const Signup = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    userType: "business_owner",
+    userType: "merchant",
     avatar: ""
   });
 
