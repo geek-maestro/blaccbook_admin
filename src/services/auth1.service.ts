@@ -7,7 +7,7 @@ import {
   signOut
 } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { getByFilters } from "@/lib/firestoreCrud";
+import { getByFilters, put, update } from "@/lib/firestoreCrud";
 
 const fetchUserData = async (uid: string, email?: string | null) => {
   // Try finding by userId
@@ -57,7 +57,7 @@ const credSignIn = async (email: string, password: string) => {
   let token = null;
   try {
     token = await userCred.user.getIdToken();
-    console.log("Firebase ID Token:", token);
+    // console.log("Firebase ID Token:", token);
   } catch (tokenErr) {
     console.warn("Could not get ID Token:", tokenErr);
   }
@@ -98,8 +98,8 @@ const signUpWithEmail = async (
   email: string,
   password: string,
   firstname: string,
-  lastname: string,
-  userType: string,
+  lastname: string,   
+  role: string = 'merchant',
   avatar: string,
   username: string
 ) => {
@@ -115,7 +115,7 @@ const signUpWithEmail = async (
         "Authorization": `Bearer ${idToken}`
       },
       body: JSON.stringify({
-        requestedRole: "merchant"
+        requestedRole: role
       })
     });
 
@@ -154,6 +154,37 @@ const signUpWithEmail = async (
     console.error("Error calling bootstrap or profile APIs:", err);
   }
 
+  // Fallback direct Firestore write/update to ensure correct role
+  try {
+    const userProfile = await fetchUserData(userId, email).catch(() => null);
+    if (userProfile) {
+      await update("users", userProfile.id, {
+        role: role,
+        userType: role,
+        updatedAt: new Date().toISOString()
+      });
+      console.log("Direct Firestore update: successfully set role/userType to:", role);
+    } else {
+      await put("users", userId, {
+        userId: userId,
+        uid: userId,
+        email,
+        firstname,
+        lastname,
+        name: `${firstname} ${lastname}`,
+        username,
+        role: role,
+        userType: role,
+        avatar,
+        status: 'active',
+        createdAt: new Date().toISOString()
+      });
+      console.log("Direct Firestore write: successfully created user document with role/userType:", role);
+    }
+  } catch (firestoreErr) {
+    console.error("Direct Firestore fallback error:", firestoreErr);
+  }
+
   return userId;
 };
 
@@ -163,23 +194,24 @@ export const useSignUp = () => {
 
   return useMutation({
     mutationFn: ({
-      email, password, firstname, lastname, userType, avatar, username,
+      email, password, firstname, lastname, role = 'merchant', avatar, username,
     }: {
       email: string;
       password: string;
       firstname: string;
       lastname: string;
-      userType: string;
+      role?: string;
       avatar: string;
       username: string;
-    }) => signUpWithEmail(email, password, firstname, lastname, userType, avatar, username),
+    }) => signUpWithEmail(email, password, firstname, lastname, role, avatar, username),
 
-    onSuccess: (userId) => {
-      console.log("User registered:", userId);
+    onSuccess: () => {
+      console.log("User registered successfully!");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
 
     onError: (error) => {
+      console.log("Sign Up Failed");
       throw new Error(
         error instanceof Error ? error.message : "Unknown error occurred"
       );
@@ -258,6 +290,37 @@ export const socialLogin = async (accessToken: string) => {
       } catch (err) {
         console.error("Error calling bootstrap or profile APIs:", err);
       }
+
+      // Fallback direct Firestore write/update to ensure correct role
+      try {
+        const userProfile = await fetchUserData(user.uid, user.email).catch(() => null);
+        if (userProfile) {
+          await update("users", userProfile.id, {
+            role: "merchant",
+            userType: "merchant",
+            updatedAt: new Date().toISOString()
+          });
+          console.log("Direct Firestore update (social): successfully set role to merchant");
+        } else {
+          await put("users", user.uid, {
+            userId: user.uid,
+            uid: user.uid,
+            email: user.email || "",
+            firstname,
+            lastname,
+            name: user.displayName || `${firstname} ${lastname}`,
+            username: user.email?.split('@')[0] || user.uid.slice(0, 10),
+            role: "merchant",
+            userType: "merchant",
+            avatar: user.photoURL || "",
+            status: 'active',
+            createdAt: new Date().toISOString()
+          });
+          console.log("Direct Firestore write (social): successfully created user document with role merchant");
+        }
+      } catch (firestoreErr) {
+        console.error("Direct Firestore fallback error (social):", firestoreErr);
+      }
     }
 
     // Fetch and save user data
@@ -272,7 +335,7 @@ export const socialLogin = async (accessToken: string) => {
     let token = null;
     try {
       token = await user.getIdToken();
-      console.log("Firebase ID Token (Social):", token);
+      // console.log("Firebase ID Token (Social):", token);
     } catch (tokenErr) {
       console.warn("Could not get ID Token:", tokenErr);
     }
@@ -291,8 +354,9 @@ export const useSocialLogin = () => {
   return useMutation({
     mutationFn: (accessToken: string) => socialLogin(accessToken),
     onSuccess: (data) => {
-      console.log("Google Sign-In Success:", data.user);
-      console.log("User data:", data.userData);
+      // console.log("Google Sign-In Success:", data.user);
+      // console.log("User data:", data.userData);
+      console.log("Signed in successfully!");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
     onError: (error) => {
