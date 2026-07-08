@@ -46,10 +46,31 @@ const ServiceForm: React.FC<Props> = ({ defaultMerchantId = "", onCreated, servi
 
   const { data: apiBusinesses } = useApiBusinesses();
   // We only permit creating services under approved businesses tied to this merchant (or all if super admin and no default passed).
-  const businesses = apiBusinesses?.filter((b: any) => 
-    (isSuperAdmin || b.merchantUid === profile?.userId || b.merchantUid === defaultMerchantId) && 
-    b.verificationStatus === 'approved' // Or b.isActive if that's the desired metric, let's use both maybe, or just the status from the API.
-  ) || [];
+  const businesses = apiBusinesses?.filter((b: any) => {
+    const isApproved = b.status === 'approved' || b.verificationStatus === 'approved' || b.status === 'active' || b.isActive === true;
+    if (!isApproved) return false;
+
+    if (isSuperAdmin) return true;
+
+    const userUid = profile?.userId || profile?.id;
+    return (
+      (b.ownerUserId && b.ownerUserId === userUid) ||
+      (b.merchantUid && b.merchantUid === userUid) ||
+      (b.merchantId && b.merchantId === userUid) ||
+      (b.userId && b.userId === userUid) ||
+      (b.ownerUserId && b.ownerUserId === defaultMerchantId) ||
+      (b.merchantUid && b.merchantUid === defaultMerchantId) ||
+      (b.merchantId && b.merchantId === defaultMerchantId)
+    );
+  }) || [];
+
+  console.log("ServiceForm businesses lookup:", {
+    apiBusinessesRaw: apiBusinesses,
+    filteredBusinesses: businesses,
+    isSuperAdmin,
+    userId: profile?.userId || profile?.id,
+    defaultMerchantId
+  });
 
   const [form, setForm] = useState<IService>(
     serviceToEdit || {
@@ -187,8 +208,9 @@ const ServiceForm: React.FC<Props> = ({ defaultMerchantId = "", onCreated, servi
                 onValueChange={(v) => {
                   setForm((p) => ({ ...p, businessId: v }));
                   const biz = businesses?.find((b: any) => b.id === v);
-                  if (biz?.merchantUid) {
-                    setForm((p) => ({ ...p, merchantId: biz.merchantUid }));
+                  const mId = biz?.merchantUid || biz?.ownerUserId || biz?.merchantId || biz?.userId;
+                  if (mId) {
+                    setForm((p) => ({ ...p, merchantId: mId }));
                   }
                 }}
               >

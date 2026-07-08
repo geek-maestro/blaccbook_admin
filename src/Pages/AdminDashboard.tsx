@@ -109,6 +109,26 @@ const AdminDashboard = () => {
         } catch {
           errorMessage = errorText || response.statusText;
         }
+
+        // Handle 403 error due to super_admin permission requirement
+        if (response.status === 403 && (errorMessage.toLowerCase().includes("super_admin") || errorMessage.toLowerCase().includes("review businesses"))) {
+          if (window.confirm("Verification decision rejected. It seems your super_admin role is not synchronized with the backend. Would you like to synchronize now?")) {
+            const userId = auth.currentUser?.uid || profile?.userId || profile?.id;
+            if (userId) {
+              const upgradeResult = await upgradeToSuperAdmin(userId);
+              if (upgradeResult.success) {
+                alert("Role synchronized successfully! Please try verifying again.");
+                window.location.reload();
+                return;
+              } else {
+                alert(`Failed to sync role: ${upgradeResult.error}`);
+              }
+            } else {
+              alert("User ID not found. Please log in again.");
+            }
+          }
+        }
+
         throw new Error(`Failed to submit verification decision (${response.status}): ${errorMessage}`);
       }
 
@@ -116,7 +136,7 @@ const AdminDashboard = () => {
       window.location.reload();
     } catch (error) {
       console.error(error);
-      alert("An error occurred while processing the verification decision.");
+      alert(error instanceof Error ? error.message : "An error occurred while processing the verification decision.");
     } finally {
       setIsProcessingDecision(false);
     }
