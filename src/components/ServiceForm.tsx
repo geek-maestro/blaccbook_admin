@@ -280,9 +280,9 @@ const ServiceForm: React.FC<Props> = ({ defaultMerchantId = "", onCreated, servi
                 <div className="mb-2 font-medium">Availability</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const).map((day) => (
-                    <div key={day} className="grid grid-cols-2 items-center gap-2">
-                      <Label className="capitalize">{day}</Label>
-                      <Input value={form.availability?.[day] || ""} onChange={(e) => handleAvailability(day, e.target.value)} placeholder="e.g. 08:00-20:00 or Closed" />
+                    <div key={day} className="grid grid-cols-3 md:grid-cols-2 items-center gap-2">
+                      <Label className="capitalize col-span-1 md:col-span-1">{day}</Label>
+                      <Input className="col-span-2 md:col-span-1" value={form.availability?.[day] || ""} onChange={(e) => handleAvailability(day, e.target.value)} placeholder="e.g. 08:00-20:00 or Closed" />
                     </div>
                   ))}
                 </div>

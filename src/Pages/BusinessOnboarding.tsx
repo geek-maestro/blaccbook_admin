@@ -470,7 +470,7 @@ const BusinessOnboarding = () => {
 
             <div className="space-y-4">
               {Object.entries(formData.hours).map(([day, hours]) => (
-                <div key={day} className="flex items-center space-x-4 p-4 border rounded-lg">
+                <div key={day} className="flex items-center space-x-4 p-1 md:p-4 border rounded-lg">
                   <div className="w-20">
                     <Label className="capitalize">{day}</Label>
                   </div>
@@ -489,7 +489,7 @@ const BusinessOnboarding = () => {
                   </div>
 
                   {!hours.closed && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col md:flex-row items-center space-x-2">
                       <Input
                         type="time"
                         value={hours.open}
@@ -633,7 +633,7 @@ const BusinessOnboarding = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-1 md:p-4 lg:p-6">
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">

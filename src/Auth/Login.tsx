@@ -110,7 +110,7 @@ function Login() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-indigo-900/95 flex flex-col items-center justify-center p-12">
                 <div className="text-center space-y-6">
-                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm shadow-xl overflow-hidden border-2 border-white/30">
+                  <div className=" bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-xl overflow-hidden border-2 border-white/30">
                     <img src="/logo.jpeg" alt="BlaccBook Logo" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-4">
