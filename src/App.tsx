@@ -34,6 +34,8 @@ import AdminCategories from "./Pages/AdminCategories";
 import AdminAnalytics from "./Pages/AdminAnalytics";
 import AdminSecurity from "./Pages/AdminSecurity";
 import AdminSettings from "./Pages/AdminSettings";
+import AdminPrivacy from "./Pages/AdminPrivacy";
+import AdminAds from "./Pages/AdminAds";
 
 import BusinessOnboarding from "./Pages/BusinessOnboarding";
 import MerchantVerifiedBusinesses from "./Pages/MerchantVerifiedBusinesses";
@@ -94,6 +96,8 @@ function App() {
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/admin/security" element={<AdminSecurity />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/privacy" element={<AdminPrivacy />} />
+            <Route path="/admin/ads" element={<AdminAds />} />
           </Routes>
           {/* <Toaster /> removed because it does not exist. If you want to use ToastProvider/ToastViewport, add them here. */}
         </div>

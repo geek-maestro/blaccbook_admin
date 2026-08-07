@@ -6,11 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Store, Edit, MapPin, Mail, Phone, Eye, FileText, Calendar, CheckCircle, AlertCircle, Search, X } from 'lucide-react';
+import { Store, Edit, MapPin, Mail, Phone, Eye, FileText, Calendar, CheckCircle, AlertCircle, XCircle, Search, X } from 'lucide-react';
 import { useMyVerifiedBusinesses, useEditVerifiedBusiness } from '@/services/businessVerification.service';
 import { IBusinessVerification } from '@/Types/businessVerification';
 import { auth } from '@/lib/firebaseConfig';
 import { useNavigate } from 'react-router-dom';
+
+const getBusinessStatus = (b: IBusinessVerification) => {
+    const statusStr = (b.status || '').toLowerCase();
+    if (statusStr === 'pending' || statusStr === 'under_review') return 'pending';
+    if (statusStr === 'rejected' || statusStr === 'declined' || statusStr === 'inactive' || b.isActive === false) return 'rejected';
+    return 'active';
+};
 
 const MerchantVerifiedBusinesses = () => {
     const navigate = useNavigate();
@@ -171,11 +178,11 @@ const MerchantVerifiedBusinesses = () => {
                             </div>
                             <div className="bg-white rounded-lg p-4 border border-gray-200">
                                 <p className="text-sm text-gray-600">Active</p>
-                                <p className="text-2xl font-bold text-green-600">{businesses.filter((b: IBusinessVerification) => b.status !== 'pending').length}</p>
+                                <p className="text-2xl font-bold text-green-600">{businesses.filter((b: IBusinessVerification) => getBusinessStatus(b) === 'active').length}</p>
                             </div>
                             <div className="bg-white rounded-lg p-4 border border-gray-200">
                                 <p className="text-sm text-gray-600">Pending Review</p>
-                                <p className="text-2xl font-bold text-yellow-600">{businesses.filter((b: IBusinessVerification) => b.status === 'pending').length}</p>
+                                <p className="text-2xl font-bold text-yellow-600">{businesses.filter((b: IBusinessVerification) => getBusinessStatus(b) === 'pending').length}</p>
                             </div>
                         </div>
                     )}
@@ -198,7 +205,10 @@ const MerchantVerifiedBusinesses = () => {
                         {filteredBusinesses.map((business: IBusinessVerification) => (
                             <Card key={business.id} className="hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 overflow-hidden">
                                 {/* Status Banner */}
-                                <div className={`h-1 ${business.status === 'pending' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                                <div className={`h-1 ${
+                                    getBusinessStatus(business) === 'pending' ? 'bg-yellow-500' :
+                                    getBusinessStatus(business) === 'rejected' ? 'bg-red-500' : 'bg-green-500'
+                                }`} />
 
                                 <CardHeader className="pb-3">
                                     <div className="flex justify-between items-start gap-2">
@@ -215,15 +225,22 @@ const MerchantVerifiedBusinesses = () => {
                                         </div>
                                         <Badge
                                             className={`flex-shrink-0 ${
-                                                business.status === 'pending'
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : 'bg-green-100 text-green-800'
+                                                getBusinessStatus(business) === 'pending'
+                                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                    : getBusinessStatus(business) === 'rejected'
+                                                    ? 'bg-red-100 text-red-800 border-red-200'
+                                                    : 'bg-green-100 text-green-800 border-green-200'
                                             }`}
                                         >
-                                            {business.status === 'pending' ? (
+                                            {getBusinessStatus(business) === 'pending' ? (
                                                 <div className="flex items-center">
                                                     <AlertCircle className="h-3 w-3 mr-1" />
                                                     Pending
+                                                </div>
+                                            ) : getBusinessStatus(business) === 'rejected' ? (
+                                                <div className="flex items-center">
+                                                    <XCircle className="h-3 w-3 mr-1" />
+                                                    Rejected
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center">

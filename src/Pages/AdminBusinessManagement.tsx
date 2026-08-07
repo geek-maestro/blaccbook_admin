@@ -36,14 +36,19 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
+import { auth } from '@/lib/firebaseConfig';
 import AdminSidebar from '@/components/AdminSidebar';
 import { useBusinesses } from '@/services/business.service';
 import { update } from '@/lib/firestoreCrud';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const AdminBusinessManagement = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -74,21 +79,27 @@ const AdminBusinessManagement = () => {
   // Transform live data to match expected format
   const businesses = allBusinesses?.map((business: any) => ({
     id: business.id || business.businessId,
-    name: business.name || business.businessName || 'Unnamed Business',
-    category: business.category || business.type || 'General',
-    owner: business.owner || business.ownerName || 'Unknown Owner',
-    email: business.email || business.ownerEmail || 'No email',
-    phone: business.phone || business.contact?.phone || 'No phone',
-    location: business.location || `${business.city || 'Unknown'}, ${business.state || 'Unknown'}`,
-    status: business.status || 'pending',
-    featured: business.featured || false,
+    name: business.businessName || business.name || 'Unnamed Business',
+    category: business.categoryId || business.category || business.type || 'General',
+    owner: business.owner || business.ownerName || business.contactEmail || business.email || 'Unknown Owner',
+    email: business.contactEmail || business.email || business.ownerEmail || 'No email',
+    phone: business.contactPhone || business.phone || business.contact?.phone || 'No phone',
+    location: typeof business.location === 'object'
+      ? `${business.location?.address || ''}${business.location?.city ? ', ' + business.location.city : ''}`
+      : (business.location || business.address || 'Location missing'),
+    status: business.status || (business.isActive ? 'active' : 'pending'),
+    featured: business.isFeatured ?? business.featured ?? false,
+    isFeatured: business.isFeatured ?? business.featured ?? false,
     rating: business.rating || 0,
     reviews: business.reviews || 0,
     revenue: business.revenue || 0,
     orders: business.orders || 0,
-    joinedDate: business.createdAt || business.joinedDate || new Date().toISOString(),
+    joinedDate: business.createdAt || business.joinedDate || business.submittedAt || new Date().toISOString(),
     lastActive: business.updatedAt || business.lastActive || new Date().toISOString(),
-    images: business.images || business.photos || [],
+    images: Array.isArray(business.documentUrls) && business.documentUrls.length > 0 
+      ? business.documentUrls 
+      : (business.coverImage ? [business.coverImage] : (Array.isArray(business.images) ? business.images : [])),
+    coverImage: business.coverImage || business.featuredImage || (Array.isArray(business.documentUrls) ? business.documentUrls[0] : null),
     description: business.description || 'No description provided',
     tags: business.tags || business.categories || [],
     coordinates: business.coordinates || business.mapLocation || { lat: 0, lng: 0 }
@@ -100,9 +111,11 @@ const AdminBusinessManagement = () => {
     const matchesSearch = (business.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (business.owner?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (business.location?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || business.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || business.status === statusFilter;
-    const matchesLocation = locationFilter === 'all' || business.location.includes(locationFilter);
+    const matchesCategory = categoryFilter === 'all' || 
+                            business.category.toLowerCase().includes(categoryFilter.toLowerCase()) ||
+                            categoryFilter.toLowerCase().includes(business.category.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || business.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesLocation = locationFilter === 'all' || business.location.toLowerCase().includes(locationFilter.toLowerCase());
 
     return matchesSearch && matchesCategory && matchesStatus && matchesLocation;
   });
@@ -132,13 +145,59 @@ const AdminBusinessManagement = () => {
   };
 
   const handleToggleFeatured = async (business: any) => {
+    const businessId = business.id || business.businessId;
+    if (!businessId) return;
+    const newFeaturedState = !business.featured;
+
     try {
+      const token = await auth.currentUser?.getIdToken();
+
+      const bodyFormData = new FormData();
+      bodyFormData.append("businessId", String(businessId));
+      bodyFormData.append("id", String(businessId));
+      bodyFormData.append("isFeatured", String(newFeaturedState));
+
+      const headers: Record<string, string> = {
+        "accept": "*/*"
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      try {
+        const response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses/update", {
+          method: "PATCH",
+          headers,
+          body: bodyFormData
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(`PATCH /merchant/businesses/update returned ${response.status}:`, errorText);
+        }
+      } catch (e) {
+        console.warn("REST API featured toggle warning:", e);
+      }
+
       await updateBusiness.mutateAsync({
-        businessId: business.id,
-        updates: { featured: !business.featured }
+        businessId: businessId,
+        updates: { 
+          isFeatured: newFeaturedState, 
+          featured: newFeaturedState 
+        }
       });
-    } catch (error) {
+
+      toast({
+        title: newFeaturedState ? 'Marked as Featured' : 'Unmarked from Featured',
+        description: `"${business.name}" is now ${newFeaturedState ? 'featured' : 'unfeatured'}.`,
+      });
+    } catch (error: any) {
       console.error('Failed to toggle featured status:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update featured status",
+        description: error.message || "An error occurred while updating featured status.",
+      });
     }
   };
 
@@ -354,17 +413,31 @@ const AdminBusinessManagement = () => {
                                 <Building2 className="h-8 w-8 text-gray-600" />
                               </div>
                               <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <h3 className="text-lg font-semibold">{business.name}</h3>
                                   <Badge variant={getStatusBadgeVariant(business.status)}>
                                     {business.status}
                                   </Badge>
-                                  {business.featured && (
-                                    <Badge variant="default" className="bg-yellow-500">
-                                      <Star className="h-3 w-3 mr-1" />
-                                      Featured
-                                    </Badge>
-                                  )}
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleFeatured(business);
+                                    }}
+                                    className={`inline-flex items-center gap-2 cursor-pointer select-none rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 shadow-sm border ml-2 ${
+                                      business.featured
+                                        ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 ring-1 ring-amber-400/20'
+                                        : 'bg-gray-100/90 border-gray-200 text-gray-600 hover:bg-gray-200/80 hover:text-gray-900'
+                                    }`}
+                                  >
+                                    <Star className={`h-3.5 w-3.5 transition-transform duration-200 ${business.featured ? 'fill-amber-500 text-amber-500 scale-110' : 'text-gray-400'}`} />
+                                    <span>{business.featured ? 'Featured' : 'Mark Featured'}</span>
+                                    <Switch 
+                                      id={`featured-${business.id}`}
+                                      checked={Boolean(business.featured)}
+                                      onCheckedChange={() => {}}
+                                      className="pointer-events-none data-[state=checked]:bg-amber-500 h-4 w-7 [&>span]:h-3 [&>span]:w-3 ml-1"
+                                    />
+                                  </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -499,51 +572,160 @@ const AdminBusinessManagement = () => {
 
       {/* View Business Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Business Details</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl overflow-hidden p-0 rounded-xl border border-gray-200 shadow-2xl">
           {selectedBusiness && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Business Name</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.category}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Owner</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.owner}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Phone</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.phone}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Location</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.location}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <Badge variant={getStatusBadgeVariant(selectedBusiness.status)}>
-                    {selectedBusiness.status}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Featured</label>
-                  <p className="text-sm text-gray-600">{selectedBusiness.featured ? 'Yes' : 'No'}</p>
+            <div>
+              {/* Header Banner */}
+              <div className="relative h-48 w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 flex items-end overflow-hidden">
+                {selectedBusiness.coverImage || selectedBusiness.featuredImage ? (
+                  <img 
+                    src={selectedBusiness.coverImage || selectedBusiness.featuredImage} 
+                    alt={selectedBusiness.name} 
+                    className="absolute inset-0 w-full h-full object-cover opacity-60"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
+                
+                <div className="relative z-10 p-6 w-full flex items-end justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusBadgeVariant(selectedBusiness.status)} className="capitalize px-2.5 py-0.5 font-medium">
+                        {selectedBusiness.status}
+                      </Badge>
+                      {selectedBusiness.featured && (
+                        <Badge className="bg-amber-500 text-amber-950 font-bold flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 fill-amber-950 text-amber-950" />
+                          Featured Business
+                        </Badge>
+                      )}
+                    </div>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">{selectedBusiness.name}</h2>
+                    <p className="text-xs text-slate-300 flex items-center gap-1">
+                      <Tag className="h-3.5 w-3.5 text-indigo-400" />
+                      {selectedBusiness.category}
+                    </p>
+                  </div>
+
+                  {/* Top-Right Quick Featured Action */}
+                  <Button
+                    size="sm"
+                    variant={selectedBusiness.featured ? "secondary" : "outline"}
+                    onClick={() => {
+                      handleToggleFeatured(selectedBusiness);
+                      setSelectedBusiness((prev: any) => prev ? ({ ...prev, featured: !prev.featured, isFeatured: !prev.featured }) : null);
+                    }}
+                    className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md font-medium text-xs"
+                  >
+                    <Star className={`h-3.5 w-3.5 mr-1.5 ${selectedBusiness.featured ? 'fill-amber-400 text-amber-400' : ''}`} />
+                    {selectedBusiness.featured ? 'Featured' : 'Mark Featured'}
+                  </Button>
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-medium">Description</label>
-                <p className="text-sm text-gray-600">{selectedBusiness.description}</p>
+
+              {/* Main Content Body */}
+              <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto bg-gray-50/50">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-500 font-medium">Rating</p>
+                    <p className="text-lg font-bold text-gray-900 flex items-center gap-1 mt-0.5">
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      {selectedBusiness.rating || '4.8'} <span className="text-xs font-normal text-gray-500">({selectedBusiness.reviews || 12})</span>
+                    </p>
+                  </div>
+
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-500 font-medium">Joined Date</p>
+                    <p className="text-sm font-semibold text-gray-800 mt-1 flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                      {new Date(selectedBusiness.joinedDate).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-500 font-medium">Total Orders</p>
+                    <p className="text-sm font-semibold text-gray-800 mt-1 flex items-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                      {selectedBusiness.orders || 0} orders
+                    </p>
+                  </div>
+
+                  <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-gray-500 font-medium">Featured Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Switch 
+                        checked={Boolean(selectedBusiness.featured)}
+                        onCheckedChange={() => {
+                          handleToggleFeatured(selectedBusiness);
+                          setSelectedBusiness((prev: any) => prev ? ({ ...prev, featured: !prev.featured, isFeatured: !prev.featured }) : null);
+                        }}
+                        className="data-[state=checked]:bg-amber-500 h-4 w-7 [&>span]:h-3 [&>span]:w-3"
+                      />
+                      <span className="text-xs font-semibold text-gray-700">
+                        {selectedBusiness.featured ? 'Active' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm space-y-1.5">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">About Business</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">{selectedBusiness.description}</p>
+                </div>
+
+                {/* Contact & Location Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm space-y-3">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Info</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center text-gray-700">
+                        <Users className="h-4 w-4 mr-2.5 text-indigo-500 flex-shrink-0" />
+                        <span className="font-medium">{selectedBusiness.owner}</span>
+                      </div>
+                      <div className="flex items-center text-gray-600">
+                        <Mail className="h-4 w-4 mr-2.5 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{selectedBusiness.email}</span>
+                      </div>
+                      <div className="flex items-center text-gray-600">
+                        <Phone className="h-4 w-4 mr-2.5 text-emerald-500 flex-shrink-0" />
+                        <span>{selectedBusiness.phone}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm space-y-3">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location & Coordinates</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start text-gray-700">
+                        <MapPin className="h-4 w-4 mr-2.5 text-red-500 flex-shrink-0 mt-0.5" />
+                        <span>{selectedBusiness.location}</span>
+                      </div>
+                      {selectedBusiness.coordinates && (
+                        <div className="text-xs text-gray-400 font-mono pl-6">
+                          Lat: {selectedBusiness.coordinates.lat || 0}, Lng: {selectedBusiness.coordinates.lng || 0}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-white border-t border-gray-100 flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(false)}>
+                  Close
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setIsViewDialogOpen(false);
+                    handleEditBusiness(selectedBusiness);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit Business
+                </Button>
               </div>
             </div>
           )}

@@ -40,6 +40,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
 import Sidebar from '@/components/Sidebar';
 import { 
   useApiMerchantOrders, 
@@ -50,6 +51,7 @@ import { useMyBusinesses } from '@/services/business.service';
 import { IApiOrder, OrderStatus } from '@/Types/order';
 
 const BusinessOrderManagement = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<IApiOrder | null>(null);
@@ -177,10 +179,20 @@ const BusinessOrderManagement = () => {
         status: newStatus,
       });
       
+      toast({
+        title: "Order status updated",
+        description: `Order ${selectedOrder.id} status changed to ${newStatus}.`,
+      });
+
       setIsStatusDialogOpen(false);
       setStatusNotes('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update order status:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update order status",
+        description: error?.message || "An unknown error occurred while updating the order status.",
+      });
     }
   };
 
@@ -547,6 +559,8 @@ const BusinessOrderManagement = () => {
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="fulfilled">Fulfilled</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                    <SelectItem value="disputed">Disputed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Building2,
@@ -14,7 +14,9 @@ import {
   FileText,
   CreditCard,
   Users,
-  Clock
+  Clock,
+  Navigation,
+  Crosshair
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,20 +27,38 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useQuery } from '@tanstack/react-query';
 import { useUserProfile } from '@/services/profile.service';
 import { auth } from '@/lib/firebaseConfig';
 import { post } from '@/lib/firestoreCrud';
 
+const fetchActiveCategories = async () => {
+  const res = await fetch('https://api-wki5bofifq-uc.a.run.app/content/categories');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.items || data.data || []);
+};
+
 const BusinessOnboarding = () => {
   const navigate = useNavigate();
   const { data: profile } = useUserProfile();
+  const { data: activeCategories = [] } = useQuery({
+    queryKey: ['active-categories'],
+    queryFn: fetchActiveCategories
+  });
+
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
   const [formData, setFormData] = useState({
     // Business Information
     businessName: '',
     businessType: '',
+    selectedCategoryId: '',
     description: '',
     categories: [] as string[],
 
@@ -80,6 +100,35 @@ const BusinessOnboarding = () => {
     paymentMethods: [] as string[],
     commissionRate: 5
   });
+
+  const fetchLiveLocation = () => {
+    if (!navigator.geolocation) return;
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData(prev => ({
+          ...prev,
+          lat: String(pos.coords.latitude),
+          lng: String(pos.coords.longitude)
+        }));
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn("Geolocation detection warning:", err);
+        setFormData(prev => ({
+          ...prev,
+          lat: prev.lat || "5.6037",
+          lng: prev.lng || "-0.1870"
+        }));
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    fetchLiveLocation();
+  }, []);
 
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
@@ -152,8 +201,7 @@ const BusinessOnboarding = () => {
         return (
           formData.businessName.trim() !== '' &&
           formData.businessType !== '' &&
-          formData.description.trim() !== '' &&
-          formData.categories.length > 0
+          formData.description.trim() !== ''
         );
       case 2:
         return (
@@ -193,6 +241,14 @@ const BusinessOnboarding = () => {
     }
   };
 
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImageFile(file);
+      setCoverImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async () => {
     if (!auth.currentUser) {
       console.error("No authenticated user found.");
@@ -203,40 +259,71 @@ const BusinessOnboarding = () => {
       setIsSubmitting(true);
       const idToken = await auth.currentUser.getIdToken(true);
 
-      const documentUrls = [formData.featuredImage, ...formData.galleryImages].filter(url => url !== "");
+      const catIdToSend = formData.selectedCategoryId || (activeCategories[0]?.id || activeCategories[0]?.dbIdentifier || "retail");
 
-      const payload = {
-        businessName: formData.businessName || "Default Business Name",
-        taxInfo: formData.taxId || "Not Provided yet",
-        registrationInfo: formData.businessLicense || "Not Provided yet",
-        address: formData.address || "Not Provided",
-        location: {
-          address: formData.address || "Not Provided",
-          city: formData.city || "Not Provided",
-          state: formData.state || "Not Provided",
-          country: formData.country || "Not Provided",
-          postalCode: formData.zipCode || "Not Provided"
-        },
-        coordinates: {
-          lat: parseFloat(formData.lat) || 0,
-          lng: parseFloat(formData.lng) || 0
-        },
-        contactPhone: formData.phone || "Not Provided",
-        contactEmail: formData.email || "Not Provided",
-        categories: formData.categories.length > 0 ? formData.categories : ["Not Provided"],
-        documentUrls: documentUrls.length > 0 ? documentUrls : ["Not Provided"]
+      const bodyFormData = new FormData();
+      bodyFormData.append("businessName", formData.businessName || "Example Business");
+      bodyFormData.append("categoryId", String(catIdToSend));
+      bodyFormData.append("description", formData.description || "");
+      bodyFormData.append("location.address", formData.address || "Accra");
+      bodyFormData.append("location.city", formData.city || "Accra");
+      bodyFormData.append("location.state", formData.state || "Greater Accra");
+      bodyFormData.append("location.country", formData.country || "Ghana");
+      bodyFormData.append("location.postalCode", formData.zipCode || "00233");
+      bodyFormData.append("coordinates.lat", String(parseFloat(formData.lat) || 0));
+      bodyFormData.append("coordinates.lng", String(parseFloat(formData.lng) || 0));
+      bodyFormData.append("contactPhone", formData.phone || "");
+      bodyFormData.append("contactEmail", formData.email || "");
+      bodyFormData.append("taxInfo", formData.taxId || "");
+      bodyFormData.append("registrationInfo", formData.businessLicense || "");
+      bodyFormData.append("isFeatured", "true");
+
+      if (coverImageFile) {
+        bodyFormData.append("coverImage", coverImageFile);
+      } else if (formData.featuredImage) {
+        bodyFormData.append("coverImage", formData.featuredImage);
+      }
+
+      console.log('Submitting merchant business via FormData');
+
+      let token = auth.currentUser ? await auth.currentUser.getIdToken(true) : null;
+      const headers: Record<string, string> = {
+        "accept": "*/*"
       };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
 
-      console.log('Submitting business data payload:', payload);
-
-      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses", {
+      let response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`
-        },
-        body: JSON.stringify(payload)
+        headers,
+        body: bodyFormData
       });
+
+      if (response.status === 403 && auth.currentUser) {
+        console.warn("403 Forbidden received. Bootstrapping merchant role and retrying...");
+        try {
+          await fetch("https://api-wki5bofifq-uc.a.run.app/auth/bootstrap", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ requestedRole: "merchant" })
+          });
+
+          token = await auth.currentUser.getIdToken(true);
+          headers["Authorization"] = `Bearer ${token}`;
+
+          response = await fetch("https://api-wki5bofifq-uc.a.run.app/merchant/businesses", {
+            method: "POST",
+            headers,
+            body: bodyFormData
+          });
+        } catch (bootstrapErr) {
+          console.error("Failed merchant role bootstrap retry:", bootstrapErr);
+        }
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -267,7 +354,7 @@ const BusinessOnboarding = () => {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Information</h2>
-              <p className="text-gray-600">Tell us about your business</p>
+              <p className="text-gray-600">Manage your active business directory listings.</p>
             </div>
 
             <div className="space-y-4">
@@ -311,19 +398,55 @@ const BusinessOnboarding = () => {
               </div>
 
               <div>
-                <Label>Business Categories *</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {businessCategories.map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={category}
-                        checked={formData.categories.includes(category)}
-                        onCheckedChange={() => handleCategoryToggle(category)}
-                      />
-                      <Label htmlFor={category} className="text-sm">{category}</Label>
+                <Label className="text-sm font-semibold text-gray-700">Cover Image</Label>
+                <div 
+                  onClick={() => coverInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100/50 transition-colors mt-1"
+                >
+                  <input 
+                    type="file" 
+                    ref={coverInputRef} 
+                    onChange={handleCoverFileChange} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+                  {coverImagePreview ? (
+                    <div className="relative w-full max-h-48 overflow-hidden rounded-md border border-gray-200 flex items-center justify-center bg-black">
+                      <img src={coverImagePreview} alt="Cover Preview" className="max-h-48 object-contain" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
+                        Click to change cover image
+                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-col items-center py-2">
+                      <Camera className="h-8 w-8 text-gray-400 mb-1" />
+                      <p className="text-gray-600 font-semibold text-sm">Click to upload cover image</p>
+                      <p className="text-gray-400 text-xs mt-0.5">PNG, JPG, JPEG (Max 5MB)</p>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="category-select">Business Category *</Label>
+                <Select 
+                  value={formData.selectedCategoryId} 
+                  onValueChange={(value) => handleInputChange('selectedCategoryId', value)}
+                >
+                  <SelectTrigger id="category-select" className="mt-1">
+                    <SelectValue placeholder="Select an active category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeCategories.map((cat: any) => {
+                      const catId = String(cat.id || cat.dbIdentifier || cat.name);
+                      return (
+                        <SelectItem key={catId} value={catId}>
+                          {cat.name || cat.title || catId}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -431,29 +554,61 @@ const BusinessOnboarding = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="lat">Latitude (Optional)</Label>
-                  <Input
-                    id="lat"
-                    type="number"
-                    step="any"
-                    value={formData.lat}
-                    onChange={(e) => handleInputChange('lat', e.target.value)}
-                    placeholder="e.g. 40.7128"
-                  />
+              {/* Map Pointer & Live Geolocation */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                    Business Location Pin
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchLiveLocation}
+                    disabled={isLocating}
+                    className="text-xs flex items-center gap-1.5 border-blue-200 text-blue-700 bg-blue-50/80 hover:bg-blue-100 transition-colors"
+                  >
+                    <Navigation className={`h-3.5 w-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+                    {isLocating ? 'Detecting GPS...' : 'Use Current Live Location'}
+                  </Button>
                 </div>
 
-                <div>
-                  <Label htmlFor="lng">Longitude (Optional)</Label>
-                  <Input
-                    id="lng"
-                    type="number"
-                    step="any"
-                    value={formData.lng}
-                    onChange={(e) => handleInputChange('lng', e.target.value)}
-                    placeholder="e.g. -74.0060"
+                <div className="relative w-full h-64 rounded-xl overflow-hidden border border-gray-300 shadow-inner bg-gray-100 group">
+                  {/* Embedded Google Map centered on current live lat/lng */}
+                  <iframe
+                    title="Business Location Map"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    scrolling="no"
+                    src={`https://maps.google.com/maps?q=${formData.lat || '5.6037'},${formData.lng || '-0.1870'}&z=15&output=embed`}
+                    className="w-full h-full border-0 pointer-events-none"
                   />
+
+                  {/* Center Location Pin Marker */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="relative flex flex-col items-center -mt-6">
+                      <div className="bg-blue-600 text-white rounded-full p-2.5 shadow-lg border-2 border-white animate-bounce">
+                        <MapPin className="h-6 w-6" />
+                      </div>
+                      <div className="w-3 h-1.5 bg-black/30 rounded-full blur-[1px]" />
+                    </div>
+                  </div>
+
+                  {/* Coordinates Overlay Bar */}
+                  <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-lg border border-gray-200 shadow-md flex items-center justify-between text-xs text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-semibold text-gray-900">GPS Location:</span>
+                      <span className="font-mono text-gray-600">
+                        {formData.lat || '5.6037'}° N, {formData.lng || '-0.1870'}° W
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                      Live GPS Active
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>

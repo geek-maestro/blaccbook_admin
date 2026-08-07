@@ -140,3 +140,43 @@ export const uploadMerchantImage = async (file: File, merchantId: string): Promi
     throw new Error('Failed to upload merchant image');
   }
 };
+
+export const uploadAdImage = async (file: File): Promise<string> => {
+  try {
+    if (!file) throw new Error('No file provided');
+    if (!file.type.startsWith('image/')) throw new Error('File must be an image');
+
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `ad_${timestamp}.${fileExtension}`;
+    const storageRef = ref(storage, `ad-images/${fileName}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading ad image:', error);
+    throw new Error('Failed to upload ad image');
+  }
+};
+
+export const uploadCategoryImage = async (file: File): Promise<string> => {
+  try {
+    if (!file) throw new Error('No file provided');
+    if (!file.type.startsWith('image/')) throw new Error('File must be an image');
+
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `category_${timestamp}.${fileExtension}`;
+    const storageRef = ref(storage, `category-images/${fileName}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
+  } catch (error) {
+    console.warn('Firebase Storage upload failed for category image, falling back to base64:', error);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
+    });
+  }
+};

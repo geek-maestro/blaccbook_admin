@@ -23,7 +23,8 @@ import {
   Clock,
   TrendingUp,
   Activity,
-  List
+  List,
+  Megaphone
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -154,6 +155,20 @@ function AdminSidebar() {
       label: 'Security',
       description: 'Verification & compliance',
       permission: 'canManageUsers'
+    },
+    {
+      path: '/admin/privacy',
+      icon: Shield,
+      label: 'Privacy',
+      description: 'Manage privacy policies',
+      permission: 'canManageSettings'
+    },
+    {
+      path: '/admin/ads',
+      icon: Megaphone,
+      label: 'Ads Management',
+      description: 'Configure ad campaigns',
+      permission: 'canManageSettings'
     },
     {
       path: '/admin/settings',
