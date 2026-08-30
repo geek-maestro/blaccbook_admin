@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -12,6 +13,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import {
   User,
@@ -24,16 +34,26 @@ import {
   Shield,
   Edit3,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  Trash2,
+  AlertOctagon
 } from "lucide-react";
 import Sidebar from '@/components/Sidebar';
-import { useUserProfile, useUpdateProfile, uploadProfileImage } from '@/services/profile.service';
+import {
+  useUserProfile,
+  useUpdateProfile,
+  uploadProfileImage,
+  useDeleteAccount
+} from '@/services/profile.service';
 import { IUser } from '@/Types/auth';
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: user, isLoading: loadingProfile } = useUserProfile();
   const updateProfileMutation = useUpdateProfile();
+  const deleteAccountMutation = useDeleteAccount();
 
   const [formData, setFormData] = useState<Partial<IUser>>({
     firstname: '',
@@ -44,6 +64,11 @@ const SettingsPage = () => {
   const [profileImage, setProfileImage] = useState<string>('');
   const [imageLoading, setImageLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Delete account modal states
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
 
   // Update form data when user data loads
   React.useEffect(() => {
@@ -133,6 +158,41 @@ const SettingsPage = () => {
     setIsEditing(false);
   };
 
+  const openDeleteDialog = () => {
+    setDeleteConfirmationText('');
+    setHasAcknowledgedRisk(false);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleteAccountMutation.isPending) return;
+    setIsDeleteDialogOpen(false);
+    setDeleteConfirmationText('');
+    setHasAcknowledgedRisk(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmationText !== 'DELETE' || !hasAcknowledgedRisk) {
+      return;
+    }
+
+    try {
+      await deleteAccountMutation.mutateAsync(user?.userId || '');
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Account Permanently Deleted",
+        description: "Your merchant account and all associated data have been removed.",
+      });
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Account Deletion Failed",
+        description: error?.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loadingProfile) {
     return (
       <div className="flex h-screen bg-gray-50">
@@ -199,7 +259,7 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="p-6 max-w-4xl mx-auto space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Profile Card */}
             <div className="lg:col-span-1">
@@ -245,8 +305,8 @@ const SettingsPage = () => {
                         {user?.firstname} {user?.lastname}
                       </h2>
                       <p className="text-gray-600">@{user?.username}</p>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                        {user?.role || 'User'}
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 capitalize">
+                        {user?.role || 'Merchant'}
                       </Badge>
                     </div>
 
@@ -273,7 +333,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Profile Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <Card className="bg-white shadow-sm border-0">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl font-semibold text-gray-900">
@@ -397,14 +457,6 @@ const SettingsPage = () => {
                           </Button>
                         </div>
                       </div>
-                      {/* <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700">User ID</Label>
-                        <Input 
-                          value={user?.userId || ''} 
-                          disabled 
-                          className="bg-gray-50 font-mono text-sm"
-                        />
-                      </div> */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">Account Created</Label>
                         <Input
@@ -434,10 +486,161 @@ const SettingsPage = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Danger Zone: Account Deletion */}
+              <Card className="border-2 border-red-200 bg-red-50/20 shadow-sm rounded-xl overflow-hidden">
+                <CardHeader className="bg-red-50/60 border-b border-red-100 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 bg-red-100 rounded-md text-red-600">
+                      <AlertOctagon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-bold text-red-900">
+                        Danger Zone
+                      </CardTitle>
+                      <CardDescription className="text-red-700 text-xs mt-0.5">
+                        Irreversible and destructive account operations
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-gray-900 text-base">
+                        Delete Merchant Account
+                      </h4>
+                      <p className="text-sm text-gray-600 max-w-lg">
+                        Permanently remove your merchant profile, registered businesses, service listings, catalog products, and all associated booking & order records.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={openDeleteDialog}
+                      className="bg-red-600 hover:bg-red-700 text-white font-medium shrink-0 shadow-sm hover:shadow transition-all"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Strong Warning Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={closeDeleteDialog}>
+        <DialogContent className="sm:max-w-lg bg-white border border-red-100 shadow-2xl p-6 rounded-2xl">
+          <DialogHeader className="space-y-3">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 ring-8 ring-red-50">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <div className="text-center space-y-1">
+              <DialogTitle className="text-xl font-bold text-gray-900">
+                Permanently Delete Merchant Account?
+              </DialogTitle>
+              <DialogDescription className="text-sm text-gray-500">
+                This is an extremely destructive action with severe consequences. Please review carefully before proceeding.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          {/* Strong Warning Notice Box */}
+          <div className="my-2 rounded-xl bg-red-50 border border-red-200 p-4 space-y-3">
+            <div className="flex items-center space-x-2 text-red-900 font-semibold text-sm">
+              <AlertOctagon className="h-4 w-4 text-red-600 shrink-0" />
+              <span>The following data will be permanently erased:</span>
+            </div>
+            <ul className="text-xs text-red-800 space-y-2 list-disc list-inside">
+              <li>
+                <strong className="font-semibold text-red-950">Merchant Account:</strong> Your profile credentials, login access, and merchant authority.
+              </li>
+              <li>
+                <strong className="font-semibold text-red-950">Businesses & Catalog:</strong> All your verified businesses, service offerings, and product listings.
+              </li>
+              <li>
+                <strong className="font-semibold text-red-950">Orders & Bookings:</strong> Your customer appointments, order transaction history, and communications.
+              </li>
+              <li>
+                <strong className="font-semibold text-red-950">No Recovery:</strong> This action cannot be reversed or undone under any circumstances.
+              </li>
+            </ul>
+          </div>
+
+          {/* Verification Safeguards */}
+          <div className="space-y-4 pt-1">
+            {/* Step 1: Acknowledgment Checkbox */}
+            <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <Checkbox
+                id="acknowledge-delete"
+                checked={hasAcknowledgedRisk}
+                onCheckedChange={(checked) => setHasAcknowledgedRisk(checked === true)}
+                className="mt-0.5 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+              />
+              <Label
+                htmlFor="acknowledge-delete"
+                className="text-xs font-medium text-gray-700 leading-snug cursor-pointer select-none"
+              >
+                I understand that deleting my account is permanent, irreversible, and all my merchant data will be wiped immediately.
+              </Label>
+            </div>
+
+            {/* Step 2: Confirmation phrase input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm-phrase" className="text-xs font-medium text-gray-700">
+                To confirm, type <span className="font-bold text-red-600 font-mono">DELETE</span> below:
+              </Label>
+              <Input
+                id="confirm-phrase"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value.toUpperCase())}
+                placeholder="Type DELETE to confirm"
+                className="font-mono text-sm tracking-wide border-gray-300 focus:border-red-500 focus:ring-red-500"
+                disabled={deleteAccountMutation.isPending}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-gray-100 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeDeleteDialog}
+              disabled={deleteAccountMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={
+                deleteConfirmationText !== 'DELETE' ||
+                !hasAcknowledgedRisk ||
+                deleteAccountMutation.isPending
+              }
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm transition-all"
+            >
+              {deleteAccountMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting Account...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Permanently Delete Account
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

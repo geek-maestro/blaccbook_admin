@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updateProfile, sendPasswordResetEmail } from "firebase/auth";
+import { updateProfile, sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import { auth } from "@/lib/firebaseConfig";
-import { update, getByFilters } from "@/lib/firestoreCrud";
+import { update, getByFilters, remove } from "@/lib/firestoreCrud";
 import { IUser } from "@/Types/auth";
 
 // Get current user from localStorage
@@ -116,6 +116,137 @@ export const useSendPasswordReset = () => {
     mutationFn: async (email: string) => {
       await sendPasswordResetEmail(auth, email);
     }
+  });
+};
+
+// Delete User / Merchant Account
+export const deleteUserAccount = async (userId: string) => {
+  const currentUser = auth.currentUser;
+  const targetUid = userId || currentUser?.uid;
+
+  if (!targetUid) {
+    throw new Error("No authenticated user to delete.");
+  }
+
+  let token: string | null = null;
+  if (currentUser) {
+    try {
+      token = await currentUser.getIdToken();
+    } catch (e) {
+      console.warn("Could not get ID token before deletion:", e);
+    }
+  }
+
+  // 1. Attempt backend API account deletion if available
+  if (token) {
+    const endpoints = [
+      "https://api-wki5bofifq-uc.a.run.app/accounts/profile",
+      "https://api-wki5bofifq-uc.a.run.app/merchant/account",
+      "https://api-wki5bofifq-uc.a.run.app/auth/account",
+    ];
+    for (const url of endpoints) {
+      try {
+        await fetch(url, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (err) {
+        console.warn(`Attempted DELETE ${url}:`, err);
+      }
+    }
+  }
+
+  // 2. Clean up Firestore merchant document(s)
+  try {
+    const merchantResults = await getByFilters("merchants", [
+      { key: "ownerUserId", operator: "==", value: targetUid },
+    ]);
+    if (merchantResults.data && merchantResults.data.length > 0) {
+      for (const mDoc of merchantResults.data) {
+        await remove("merchants", mDoc.id);
+      }
+    }
+    // Also try direct document ID matching targetUid
+    await remove("merchants", targetUid).catch(() => null);
+  } catch (err) {
+    console.warn("Error cleaning up merchants collection:", err);
+  }
+
+  // 3. Clean up Firestore business document(s) owned by this merchant
+  try {
+    const businessResults = await getByFilters("business", [
+      { key: "ownerUserId", operator: "==", value: targetUid },
+    ]);
+    if (businessResults.data && businessResults.data.length > 0) {
+      for (const bDoc of businessResults.data) {
+        await remove("business", bDoc.id);
+      }
+    }
+  } catch (err) {
+    console.warn("Error cleaning up business collection:", err);
+  }
+
+  // 4. Clean up Firestore user profile document(s)
+  try {
+    const userResults = await getByFilters("users", [
+      { key: "userId", operator: "==", value: targetUid },
+    ]);
+    if (userResults.data && userResults.data.length > 0) {
+      for (const uDoc of userResults.data) {
+        await remove("users", uDoc.id);
+      }
+    } else {
+      const uidResults = await getByFilters("users", [
+        { key: "uid", operator: "==", value: targetUid },
+      ]);
+      for (const uDoc of uidResults.data) {
+        await remove("users", uDoc.id);
+      }
+    }
+    // Also attempt direct doc deletion if doc.id == targetUid
+    await remove("users", targetUid).catch(() => null);
+  } catch (err) {
+    console.warn("Error cleaning up users collection:", err);
+  }
+
+  // 5. Delete Firebase Auth user
+  if (currentUser) {
+    try {
+      await deleteUser(currentUser);
+    } catch (authErr: any) {
+      if (authErr?.code === "auth/requires-recent-login") {
+        throw new Error(
+          "For security reasons, deleting your account requires a recent sign-in. Please log out, sign in again, and retry account deletion."
+        );
+      }
+      throw authErr;
+    }
+  }
+
+  // 6. Clear local/session cache
+  localStorage.removeItem("userData");
+  sessionStorage.clear();
+
+  return { success: true };
+};
+
+// Custom Hook: Delete User Account
+export const useDeleteAccount = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => deleteUserAccount(userId),
+    onSuccess: () => {
+      queryClient.clear();
+    },
+    onError: (error) => {
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to delete account"
+      );
+    },
   });
 };
 

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut
@@ -43,23 +42,55 @@ const saveUserToStorage = (userData: any) => {
 // Function to sign in with credentials
 const credSignIn = async (email: string, password: string) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
-  let userData;
-  try {
-    userData = await fetchUserData(userCred.user.uid, userCred.user.email);
-  } catch (err) {
-    console.warn("User profile not found for user:", userCred.user.uid, "email:", userCred.user.email);
-    return { user: userCred.user, userData: null } as const;
-  }
-
-
-  saveUserToStorage(userData);
-
   let token = null;
   try {
     token = await userCred.user.getIdToken();
-    // console.log("Firebase ID Token:", token);
   } catch (tokenErr) {
     console.warn("Could not get ID Token:", tokenErr);
+  }
+
+  let userData: any = null;
+  try {
+    userData = await fetchUserData(userCred.user.uid, userCred.user.email);
+  } catch (err) {
+    console.warn("User profile not found in Firestore for user:", userCred.user.uid, "email:", userCred.user.email);
+  }
+
+  // Fallback to /auth/me API if Firestore document is missing or has no role
+  if ((!userData || (!userData.role && !userData.userType)) && token) {
+    try {
+      const response = await fetch("https://api-wki5bofifq-uc.a.run.app/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const apiData = await response.json();
+        const apiRole = apiData?.role || apiData?.userType || apiData?.user?.role || apiData?.profile?.role;
+        userData = {
+          userId: userCred.user.uid,
+          uid: userCred.user.uid,
+          email: userCred.user.email,
+          role: apiRole,
+          userType: apiRole,
+          firstname: apiData?.firstname || apiData?.profile?.firstName || "",
+          lastname: apiData?.lastname || apiData?.profile?.lastName || "",
+          name: apiData?.name || apiData?.profile?.name || "",
+          ...apiData,
+          ...(userData || {})
+        };
+        if (apiRole) {
+          userData.role = apiRole;
+          userData.userType = apiRole;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("Could not fetch /auth/me fallback:", apiErr);
+    }
+  }
+
+  if (userData) {
+    saveUserToStorage(userData);
   }
 
   return { user: userCred.user, userData, token };
@@ -212,154 +243,6 @@ export const useSignUp = () => {
 
     onError: (error) => {
       console.log("Sign Up Failed");
-      throw new Error(
-        error instanceof Error ? error.message : "Unknown error occurred"
-      );
-    },
-  });
-};
-
-// Function to check if user exists
-const checkUserExists = async (userId: string) => {
-  const result = await getByFilters("users", [
-    { key: "userId", operator: "==", value: userId }
-  ]);
-  return result.data.length > 0;
-};
-
-// Function to sign in with Google
-export const socialLogin = async (accessToken: string) => {
-  try {
-    const credential = GoogleAuthProvider.credential(null, accessToken);
-    const userCredential = await signInWithCredential(auth, credential);
-    const user = userCredential.user;
-
-    // Check if user exists in users collection
-    const userExists = await checkUserExists(user.uid);
-    const isNewUser = !userExists;
-
-    if (isNewUser) {
-      const nameParts = user.displayName?.split(' ') || ['', ''];
-      const firstname = nameParts[0];
-      const lastname = nameParts[nameParts.length - 1];
-
-      try {
-        const idToken = await user.getIdToken();
-        const bootstrapResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/auth/bootstrap", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`
-          },
-          body: JSON.stringify({
-            requestedRole: "merchant"
-          })
-        });
-
-        if (!bootstrapResponse.ok) {
-          console.error("Failed to bootstrap user role via API", await bootstrapResponse.text());
-        } else {
-          console.log("Successfully bootstrapped user role");
-        }
-
-        const profilePayload = {
-          firstName: firstname,
-          lastName: lastname,
-          name: user.displayName || "",
-          phoneNumber: user.phoneNumber || "",
-          defaultLocation: {
-            additionalProp1: {}
-          }
-        };
-
-        const profileResponse = await fetch("https://api-wki5bofifq-uc.a.run.app/accounts/profile", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`
-          },
-          body: JSON.stringify(profilePayload)
-        });
-
-        if (!profileResponse.ok) {
-          console.error("Failed to update profile via API", await profileResponse.text());
-        } else {
-          console.log("Successfully updated profile via API");
-        }
-
-      } catch (err) {
-        console.error("Error calling bootstrap or profile APIs:", err);
-      }
-
-      // Fallback direct Firestore write/update to ensure correct role
-      try {
-        const userProfile = await fetchUserData(user.uid, user.email).catch(() => null);
-        if (userProfile) {
-          await update("users", userProfile.id, {
-            role: "merchant",
-            userType: "merchant",
-            updatedAt: new Date().toISOString()
-          });
-          console.log("Direct Firestore update (social): successfully set role to merchant");
-        } else {
-          await put("users", user.uid, {
-            userId: user.uid,
-            uid: user.uid,
-            email: user.email || "",
-            firstname,
-            lastname,
-            name: user.displayName || `${firstname} ${lastname}`,
-            username: user.email?.split('@')[0] || user.uid.slice(0, 10),
-            role: "merchant",
-            userType: "merchant",
-            avatar: user.photoURL || "",
-            status: 'active',
-            createdAt: new Date().toISOString()
-          });
-          console.log("Direct Firestore write (social): successfully created user document with role merchant");
-        }
-      } catch (firestoreErr) {
-        console.error("Direct Firestore fallback error (social):", firestoreErr);
-      }
-    }
-
-    // Fetch and save user data
-    let userData = null;
-    try {
-      userData = await fetchUserData(user.uid, user.email);
-      saveUserToStorage(userData);
-    } catch (err) {
-      console.warn("User profile not found for social user:", user.uid, "email:", user.email);
-    }
-
-    let token = null;
-    try {
-      token = await user.getIdToken();
-      // console.log("Firebase ID Token (Social):", token);
-    } catch (tokenErr) {
-      console.warn("Could not get ID Token:", tokenErr);
-    }
-
-    return { user, userData, token };
-  } catch (error) {
-    console.error("Social login error:", error);
-    throw error;
-  }
-};
-
-// Custom Hook: Google Sign-In
-export const useSocialLogin = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (accessToken: string) => socialLogin(accessToken),
-    onSuccess: (data) => {
-      // console.log("Google Sign-In Success:", data.user);
-      // console.log("User data:", data.userData);
-      console.log("Signed in successfully!");
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
-    },
-    onError: (error) => {
       throw new Error(
         error instanceof Error ? error.message : "Unknown error occurred"
       );

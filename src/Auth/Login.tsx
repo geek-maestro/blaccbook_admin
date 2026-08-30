@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebaseConfig";
 
 import images from "../assets/comp1.jpg";
 
@@ -11,12 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-
-} from "@/components/ui/card";
-import { useCredSignIn, useSocialLogin } from "@/services/auth1.service";
-import { useUserProfile } from "@/services/profile.service";
+import { Card } from "@/components/ui/card";
+import { useCredSignIn } from "@/services/auth1.service";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -24,7 +18,6 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
   const { mutate: signIn, isPending, error } = useCredSignIn();
-  const { mutate: socialLogin, isPending: socialLoginPending, error: socialLoginError } = useSocialLogin();
   const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
@@ -33,21 +26,36 @@ function Login() {
     signIn(
       { email, password },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
           console.log("User ID:", data.user?.uid);
           console.log("Token:", (data as any).token);
-          // Redirect based on user type or role
-          const rawUserType = data.userData?.userType || data.userData?.role;
-          const userType = typeof rawUserType === 'string' ? rawUserType.toLowerCase() : rawUserType;
-          console.log("Resolved userType for routing:", userType);
 
-          if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
-            navigate("/admin");
-          } else if (userType === 'merchant') {
-            navigate("/home", { state: { token: (data as any).token } });
-          } else if (userType === 'customer' || userType === 'consumer') {
+          // Resolve role from userData
+          const rawRole = data.userData?.role || data.userData?.userType;
+          const role = typeof rawRole === 'string' ? rawRole.toLowerCase().trim() : '';
+          console.log("Resolved role for routing:", role);
+
+          if (role === 'customer' || role === 'consumer') {
+            // Customer accounts must use the mobile app
             setAppError("Use mobile app to view your customer page.");
+            try {
+              const { signOut } = await import("firebase/auth");
+              const { auth } = await import("@/lib/firebaseConfig");
+              await signOut(auth);
+            } catch (signOutErr) {
+              console.warn("Error signing out customer session:", signOutErr);
+            }
+            localStorage.removeItem("userData");
+            sessionStorage.clear();
+            return;
+          }
+
+          if (role === 'super_admin' || role === 'admin' || ['support_staff', 'content_moderator', 'finance_manager'].includes(role)) {
+            navigate("/admin");
+          } else if (role === 'merchant' || role === 'business_owner') {
+            navigate("/home", { state: { token: (data as any).token } });
           } else {
+            // Default fallback for merchant portal
             navigate("/home", { state: { token: (data as any).token } });
           }
         },
@@ -56,44 +64,6 @@ function Login() {
         }
       }
     );
-  };
-
-  const handleSocialLogin = () => {
-    setAppError(null);
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken && result.user) {
-          console.log(credential.accessToken, "credential", result.user, "user");
-          socialLogin(credential.accessToken, {
-            onSuccess: (data) => {
-              console.log("Social User ID:", data.user?.uid);
-              console.log("Social Token:", (data as any).token);
-              // Redirect based on user type or role
-              const rawUserType = data.userData?.userType || data.userData?.role;
-              const userType = typeof rawUserType === 'string' ? rawUserType.toLowerCase() : rawUserType;
-              console.log("Resolved userType for social routing:", userType);
-
-              if (['admin', 'super_admin', 'support_staff', 'content_moderator', 'finance_manager'].includes(userType)) {
-                navigate("/admin");
-              } else if (userType === 'merchant') {
-                navigate("/home", { state: { token: (data as any).token } });
-              } else if (userType === 'customer' || userType === 'consumer') {
-                setAppError("Use mobile app to view your customer page.");
-              } else {
-                navigate("/home", { state: { token: (data as any).token } });
-              }
-            },
-            onError: (error) => {
-              console.error("Social login error:", error);
-            }
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Google sign in error:", error);
-      });
   };
 
   return (
@@ -138,8 +108,8 @@ function Login() {
 
           {/* Right side with form */}
           <div className="flex items-center justify-center p-8 lg:p-1">
-            <div className="w-full max-w-md space-y-1">
-              <div className="text-center">
+            <div className="w-full max-w-md space-y-4">
+              <div className="text-center space-y-1">
                 <h2 className="text-3xl font-bold text-gray-900">
                   Welcome Back
                 </h2>
@@ -148,10 +118,10 @@ function Login() {
                 </p>
               </div>
 
-              {(error || socialLoginError || appError) && (
+              {(error || appError) && (
                 <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800">
-                    {appError || (error instanceof Error ? error.message : socialLoginError instanceof Error ? socialLoginError.message : "An error occurred")}
+                    {appError || (error instanceof Error ? error.message : "An error occurred")}
                   </AlertDescription>
                 </Alert>
               )}
@@ -222,43 +192,7 @@ function Login() {
                   )}
                 </Button>
 
-                <div className="relative my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-4 text-gray-500 font-medium">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-12 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-                  disabled={isPending || socialLoginPending}
-                  onClick={handleSocialLogin}
-                >
-                  <svg
-                    className="mr-3 h-5 w-5"
-                    aria-hidden="true"
-                    focusable="false"
-                    data-prefix="fab"
-                    data-icon="google"
-                    role="img"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 488 512"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
-                    ></path>
-                  </svg>
-                  {socialLoginPending ? "Signing in..." : "Continue with Google"}
-                </Button>
-
-                <div className="text-center pt-6 space-y-2">
+                <div className="text-center pt-4">
                   <p className="text-gray-600">
                     Don't have an account?{" "}
                     <Button
@@ -270,43 +204,6 @@ function Login() {
                       Create Account
                     </Button>
                   </p>
-
-                  {/* Admin Access Links for Testing */}
-                  {/*  
-                  <div className="pt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
-                    <div className="space-y-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        className="text-xs w-full"
-                        onClick={() => navigate("/admin")}
-                      >
-                        🚀 Access Admin Dashboard
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        className="text-xs w-full"
-                        onClick={async () => {
-                          try {
-                            const { createTestAdmin } = await import("@/utils/createTestAdmin");
-                            await createTestAdmin();
-                            alert("Admin user created! Email: admin@blaccbook.com, Password: admin123");
-                          } catch (error: any) {
-                            console.error("Error creating admin:", error);
-                            alert(`Error creating admin user: ${error.message || "Unknown error"}`);
-                          }
-                        }}
-                      >
-                        👤 Create Test Admin
-                      </Button>
-                    </div>
-                  </div>
-                  */}
-
                 </div>
               </form>
             </div>
